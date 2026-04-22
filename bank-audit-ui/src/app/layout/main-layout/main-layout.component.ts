@@ -20,7 +20,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   `,
   styles: [`
     .sidenav-container { height: 100vh; }
-    .sidenav { width: 240px; background: #1a237e; }
+    .sidenav { width: 240px; background: #1f1f1f; }
     .main-content { background: #f5f5f5; overflow-y: auto; }
   `]
 })

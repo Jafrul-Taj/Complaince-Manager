@@ -1,0 +1,172 @@
+<div class="auth-bg">
+
+  <!-- Animated background orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="bg-grid"></div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+
+      <!-- ───── Left: Branding Panel ───── -->
+      <div class="brand-panel">
+        <div class="brand-deco-ring brand-deco-ring-1"></div>
+        <div class="brand-deco-ring brand-deco-ring-2"></div>
+
+        <div class="brand-body">
+          <div class="brand-logo-wrap">
+            <img src="assets/images/ucb.svg.png" alt="UCB Bank Logo" class="brand-logo-img" />
+          </div>
+
+          <h1 class="brand-title">Compliance Management Portal</h1>
+
+          <div class="brand-divider"></div>
+
+          <ul class="brand-features">
+            <li class="feature-item">
+              <div class="feature-icon-wrap">
+                <mat-icon>verified_user</mat-icon>
+              </div>
+              <div class="feature-text">
+                <span class="feature-name">Regulatory Compliance</span>
+                <span class="feature-desc">Full audit trail & reporting</span>
+              </div>
+            </li>
+            <li class="feature-item">
+              <div class="feature-icon-wrap">
+                <mat-icon>security</mat-icon>
+              </div>
+              <div class="feature-text">
+                <span class="feature-name">Bank-Grade Security</span>
+                <span class="feature-desc">256-bit SSL encryption</span>
+              </div>
+            </li>
+            <li class="feature-item">
+              <div class="feature-icon-wrap">
+                <mat-icon>analytics</mat-icon>
+              </div>
+              <div class="feature-text">
+                <span class="feature-name">Real-time Analytics</span>
+                <span class="feature-desc">Instant compliance insights</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="brand-year">© {{ currentYear }} UCB Bank. All rights reserved.</div>
+      </div>
+
+      <!-- ───── Right: Login Form Panel ───── -->
+      <div class="form-panel">
+        <div class="form-body">
+
+          <div class="form-header">
+            <div class="form-header-icon">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <h2>Welcome Back</h2>
+            <p>Sign in to access your compliance dashboard</p>
+          </div>
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+
+            <!-- Username -->
+            <div class="input-group"
+                 [class.focused]="userFocused"
+                 [class.has-error]="form.get('username')?.invalid && form.get('username')?.touched">
+              <div class="input-prefix">
+                <mat-icon>person_outline</mat-icon>
+              </div>
+              <div class="input-inner">
+                <label class="input-label">Username</label>
+                <input type="text"
+                       formControlName="username"
+                       placeholder="Enter your username"
+                       autocomplete="username"
+                       (focus)="userFocused = true"
+                       (blur)="userFocused = false" />
+              </div>
+            </div>
+            @if (form.get('username')?.invalid && form.get('username')?.touched) {
+              <div class="field-error">
+                <mat-icon>error_outline</mat-icon>
+                <span>Username is required</span>
+              </div>
+            }
+
+            <!-- Password -->
+            <div class="input-group"
+                 [class.focused]="passFocused"
+                 [class.has-error]="form.get('password')?.invalid && form.get('password')?.touched">
+              <div class="input-prefix">
+                <mat-icon>lock_outline</mat-icon>
+              </div>
+              <div class="input-inner">
+                <label class="input-label">Password</label>
+                <input [type]="hidePass ? 'password' : 'text'"
+                       formControlName="password"
+                       placeholder="Enter your password"
+                       autocomplete="current-password"
+                       (focus)="passFocused = true"
+                       (blur)="passFocused = false" />
+              </div>
+              <button type="button" class="visibility-btn" (click)="hidePass = !hidePass" tabindex="-1">
+                <mat-icon>{{ hidePass ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+            @if (form.get('password')?.invalid && form.get('password')?.touched) {
+              <div class="field-error">
+                <mat-icon>error_outline</mat-icon>
+                <span>Password is required</span>
+              </div>
+            }
+
+            <!-- Auth Error Banner -->
+            @if (errorMsg) {
+              <div class="error-banner">
+                <mat-icon>gpp_bad</mat-icon>
+                <span>{{ errorMsg }}</span>
+              </div>
+            }
+
+            <!-- Remember me / Forgot password -->
+            <div class="form-options">
+              <label class="remember-label">
+                <input type="checkbox"
+                       [checked]="rememberMe"
+                       (change)="onRememberMeChange($event)" />
+                <span class="custom-checkbox"></span>
+                <span class="remember-text">Remember me</span>
+              </label>
+              <a class="forgot-link" href="javascript:void(0)">Forgot Password?</a>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit"
+                    class="submit-btn"
+                    [class.is-loading]="loading"
+                    [disabled]="form.invalid || loading">
+              @if (loading) {
+                <span class="btn-spinner"></span>
+                <span>Authenticating...</span>
+              } @else {
+                <mat-icon>login</mat-icon>
+                <span>Sign In</span>
+                <span class="btn-shine"></span>
+              }
+            </button>
+
+          </form>
+
+          <div class="form-footer">
+            <mat-icon>shield</mat-icon>
+            <span>Protected by 256-bit SSL Encryption</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

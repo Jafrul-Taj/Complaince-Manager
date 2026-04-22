@@ -2,9 +2,10 @@
 
 @include mat.core();
 
-$primary: mat.define-palette(mat.$indigo-palette);
-$accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
-$warn: mat.define-palette(mat.$red-palette);
+// UCB Bank branding: Red primary, black secondary
+$primary: mat.define-palette(mat.$red-palette, 800, 600, 900);
+$accent:  mat.define-palette(mat.$deep-orange-palette, A200, A100, A400);
+$warn:    mat.define-palette(mat.$red-palette, 900, 800, 900);
 
 $theme: mat.define-light-theme((
   color: (primary: $primary, accent: $accent, warn: $warn),
@@ -41,7 +42,7 @@ html, body {
   h1 {
     font-size: 24px;
     font-weight: 500;
-    color: #333;
+    color: #1f1f1f;
   }
 }
 
@@ -62,11 +63,11 @@ html, body {
 
 /* Rectification status chips */
 .chip-pending    { background-color: #eeeeee !important; color: #616161 !important; }
-.chip-inprogress { background-color: #e3f2fd !important; color: #1565c0 !important; }
+.chip-inprogress { background-color: #fce4ec !important; color: #c62828 !important; }
 .chip-rectified  { background-color: #e8f5e9 !important; color: #2e7d32 !important; }
 
 .error-msg {
-  color: #f44336;
+  color: #c62828;
   font-size: 14px;
   margin: 8px 0;
 }

@@ -6,6 +6,7 @@ export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   {
     path: 'login',
+    title: 'Login',
     loadComponent: () =>
       import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
@@ -17,6 +18,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'users',
+        title: 'User Management',
         loadComponent: () =>
           import('./features/users/user-list/user-list.component').then(m => m.UserListComponent),
         canActivate: [roleGuard],
@@ -24,6 +26,7 @@ export const routes: Routes = [
       },
       {
         path: 'branches',
+        title: 'Branch Management',
         loadComponent: () =>
           import('./features/branches/branch-list/branch-list.component').then(m => m.BranchListComponent),
         canActivate: [roleGuard],
@@ -31,6 +34,7 @@ export const routes: Routes = [
       },
       {
         path: 'assignments',
+        title: 'Assignments',
         loadComponent: () =>
           import('./features/assignments/assignment-manager/assignment-manager.component').then(m => m.AssignmentManagerComponent),
         canActivate: [roleGuard],
@@ -38,6 +42,7 @@ export const routes: Routes = [
       },
       {
         path: 'findings',
+        title: 'My Findings',
         loadComponent: () =>
           import('./features/findings/findings-list/findings-list.component').then(m => m.FindingsListComponent),
         canActivate: [roleGuard],
@@ -45,6 +50,7 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
+        title: 'Dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
         canActivate: [roleGuard],

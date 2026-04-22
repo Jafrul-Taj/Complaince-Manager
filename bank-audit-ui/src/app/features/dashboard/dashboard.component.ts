@@ -260,12 +260,12 @@ export class DashboardComponent implements OnInit {
   private buildKpis(data: any) {
     if (!data) return;
     this.kpis = [
-      { label: 'Total Findings', value: data.totalFindings, icon: 'assignment', color: '#1565c0', bgColor: '#e3f2fd' },
-      { label: 'Critical', value: data.criticalCount, icon: 'warning', color: '#b71c1c', bgColor: '#ffebee' },
+      { label: 'Total Findings', value: data.totalFindings, icon: 'assignment', color: '#c62828', bgColor: '#ffebee' },
+      { label: 'Critical', value: data.criticalCount, icon: 'warning', color: '#b71c1c', bgColor: '#ffcdd2' },
       { label: 'High Risk', value: data.highCount, icon: 'priority_high', color: '#e65100', bgColor: '#fff3e0' },
       { label: 'Rectified', value: data.rectifiedCount, icon: 'task_alt', color: '#2e7d32', bgColor: '#e8f5e9' },
       { label: 'Pending', value: data.pendingCount, icon: 'pending', color: '#616161', bgColor: '#eeeeee' },
-      { label: 'Rectification Rate', value: data.rectificationRate + '%', icon: 'trending_up', color: '#4a148c', bgColor: '#f3e5f5' }
+      { label: 'Rectification Rate', value: data.rectificationRate + '%', icon: 'trending_up', color: '#7f1d1d', bgColor: '#fce4ec' }
     ];
   }
 
@@ -289,7 +289,7 @@ export class DashboardComponent implements OnInit {
       series: [{ name: 'Findings', data: data.map(d => d.count) }],
       chart: { type: 'bar', height: 300 },
       xaxis: { categories: data.map(d => labels[d.status] || d.status) },
-      colors: ['#1976d2'],
+      colors: ['#c62828'],
       plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
       dataLabels: { enabled: true }
     };
@@ -301,7 +301,7 @@ export class DashboardComponent implements OnInit {
       series: [{ name: 'Total Findings', data: data.map(d => d.totalFindings) }],
       chart: { type: 'bar', height: 350 },
       xaxis: { categories: data.map(d => d.branchName) },
-      colors: ['#3949ab'],
+      colors: ['#991b1b'],
       plotOptions: { bar: { borderRadius: 4, horizontal: true } },
       dataLabels: { enabled: true }
     };

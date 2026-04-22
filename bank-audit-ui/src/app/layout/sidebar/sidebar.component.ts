@@ -33,7 +33,7 @@ interface NavItem {
         </div>
       </div>
 
-      <mat-divider style="border-color: rgba(255,255,255,0.2); margin: 8px 0" />
+      <mat-divider style="border-top-color: rgba(255,255,255,0.2); margin: 8px 0" />
 
       <mat-nav-list>
         @for (item of visibleNavItems(); track item.route) {
@@ -69,9 +69,9 @@ interface NavItem {
       padding: 20px 16px 16px;
       font-size: 18px;
       font-weight: 600;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
+      border-bottom: 2px solid #c62828;
     }
-    .logo-icon { font-size: 28px; width: 28px; height: 28px; }
+    .logo-icon { font-size: 28px; width: 28px; height: 28px; color: #ef5350; }
     .user-info {
       display: flex;
       align-items: center;
@@ -86,22 +86,43 @@ interface NavItem {
       border-radius: 6px;
       margin: 2px 8px;
     }
-    .nav-item mat-icon { color: rgba(255,255,255,0.7); }
+    /* Pierce Angular Material MDC internals for list item text and icons */
+    ::ng-deep .nav-item .mdc-list-item__primary-text {
+      color: rgba(255,255,255,0.85) !important;
+    }
+    ::ng-deep .nav-item .mat-icon {
+      color: rgba(255,255,255,0.65) !important;
+    }
     ::ng-deep .active-link {
-      background-color: rgba(255,255,255,0.15) !important;
+      background-color: rgba(198,40,40,0.35) !important;
+      border-left: 3px solid #ef5350;
       color: white !important;
     }
-    ::ng-deep .active-link mat-icon { color: white !important; }
+    ::ng-deep .active-link .mdc-list-item__primary-text {
+      color: white !important;
+    }
+    ::ng-deep .active-link .mat-icon {
+      color: #ef5350 !important;
+    }
     .sidebar-footer {
       margin-top: auto;
       padding: 12px 8px;
-      border-top: 1px solid rgba(255,255,255,0.15);
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
     .logout-btn {
       color: rgba(255,255,255,0.75) !important;
       width: 100%;
       display: flex;
       gap: 8px;
+    }
+    ::ng-deep .logout-btn .mdc-button__label {
+      color: rgba(255,255,255,0.75) !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    ::ng-deep .logout-btn .mat-icon {
+      color: rgba(255,255,255,0.75) !important;
     }
   `]
 })
