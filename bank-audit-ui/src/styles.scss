@@ -1,0 +1,77 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$primary: mat.define-palette(mat.$indigo-palette);
+$accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+$warn: mat.define-palette(mat.$red-palette);
+
+$theme: mat.define-light-theme((
+  color: (primary: $primary, accent: $accent, warn: $warn),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+@include mat.all-component-themes($theme);
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: #f5f5f5;
+}
+
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #333;
+  }
+}
+
+.mat-card-elevated {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* Risk rating chips */
+.chip-low      { background-color: #e8f5e9 !important; color: #2e7d32 !important; }
+.chip-medium   { background-color: #fff8e1 !important; color: #f57f17 !important; }
+.chip-high     { background-color: #fff3e0 !important; color: #e65100 !important; }
+.chip-critical { background-color: #ffebee !important; color: #b71c1c !important; }
+
+/* Rectification status chips */
+.chip-pending    { background-color: #eeeeee !important; color: #616161 !important; }
+.chip-inprogress { background-color: #e3f2fd !important; color: #1565c0 !important; }
+.chip-rectified  { background-color: #e8f5e9 !important; color: #2e7d32 !important; }
+
+.error-msg {
+  color: #f44336;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.mat-column-actions {
+  width: 120px;
+  text-align: right;
+}

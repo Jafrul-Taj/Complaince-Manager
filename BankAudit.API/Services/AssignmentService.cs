@@ -1,0 +1,71 @@
+using BankAudit.API.Data;
+using BankAudit.API.DTOs.Assignments;
+using BankAudit.API.Entities;
+using BankAudit.API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace BankAudit.API.Services;
+
+public class AssignmentService : IAssignmentService
+{
+    private readonly AppDbContext _db;
+
+    public AssignmentService(AppDbContext db) => _db = db;
+
+    public async Task<List<AssignmentDto>> GetAllAsync()
+    {
+        return await _db.UserBranchAssignments
+            .Include(a => a.User)
+            .Include(a => a.Branch)
+            .OrderBy(a => a.Year)
+            .Select(a => ToDto(a))
+            .ToListAsync();
+    }
+
+    public async Task<List<AssignmentDto>> GetByUserAsync(int userId)
+    {
+        return await _db.UserBranchAssignments
+            .Include(a => a.User)
+            .Include(a => a.Branch)
+            .Where(a => a.UserId == userId)
+            .Select(a => ToDto(a))
+            .ToListAsync();
+    }
+
+    public async Task<AssignmentDto> CreateAsync(AssignBranchRequest request)
+    {
+        var assignment = new UserBranchAssignment
+        {
+            UserId = request.UserId,
+            BranchId = request.BranchId,
+            Year = request.Year
+        };
+        _db.UserBranchAssignments.Add(assignment);
+        await _db.SaveChangesAsync();
+
+        await _db.Entry(assignment).Reference(a => a.User).LoadAsync();
+        await _db.Entry(assignment).Reference(a => a.Branch).LoadAsync();
+
+        return ToDto(assignment);
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var assignment = await _db.UserBranchAssignments.FindAsync(id);
+        if (assignment is null) return false;
+        _db.UserBranchAssignments.Remove(assignment);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    private static AssignmentDto ToDto(UserBranchAssignment a) => new()
+    {
+        Id = a.Id,
+        UserId = a.UserId,
+        UserFullName = a.User?.FullName ?? string.Empty,
+        BranchId = a.BranchId,
+        BranchName = a.Branch?.BranchName ?? string.Empty,
+        BranchCode = a.Branch?.BranchCode ?? string.Empty,
+        Year = a.Year
+    };
+}

@@ -1,0 +1,11 @@
+using BankAudit.API.DTOs.Assignments;
+
+namespace BankAudit.API.Services.Interfaces;
+
+public interface IAssignmentService
+{
+    Task<List<AssignmentDto>> GetAllAsync();
+    Task<List<AssignmentDto>> GetByUserAsync(int userId);
+    Task<AssignmentDto> CreateAsync(AssignBranchRequest request);
+    Task<bool> DeleteAsync(int id);
+}

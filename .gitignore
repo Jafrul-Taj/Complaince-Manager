@@ -1,0 +1,34 @@
+# ===== ASP.NET Core / .NET =====
+BankAudit.API/bin/
+BankAudit.API/obj/
+BankAudit.API/*.db
+BankAudit.API/*.db-shm
+BankAudit.API/*.db-wal
+BankAudit.API/Migrations/
+*.user
+*.suo
+.vs/
+*.swp
+
+# ===== Angular / Node =====
+bank-audit-ui/node_modules/
+bank-audit-ui/dist/
+bank-audit-ui/.angular/
+
+# ===== Sensitive / local only =====
+.env
+*.env
+appsettings.Production.json
+secrets.json
+
+# ===== Claude internal =====
+.claude/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Excel / temp lock files =====
+~$*.xlsx
+New folder/

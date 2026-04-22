@@ -1,0 +1,36 @@
+Questions to Clarify Your Requirements
+	1. User Roles: 
+		What roles do you need? (e.g., Admin, Branch Manager, Auditor, Compliance Officer)
+
+	2. Workflow:
+		Should users only add/update findings for their branch?
+		Is there an approval process?
+		Do you need to track "rectification status" (Pending, In Progress, Resolved)?
+
+	3. Data Operations:
+		Should users be able to import existing Excel data?
+		Can they export filtered data back to Excel?
+		Do you need reporting/analytics dashboards?
+
+	4. Search/Filter Requirements:
+		By Branch, Date range, Risk Rating, Area, Status?
+
+	5. Authentication:
+		Do you need integration with existing corporate LDAP/AD, or simple username/password?
+
+	6. Deployment: 
+		Internal network or cloud? Expected number of concurrent users?
+		
+		
+Additional Clarifications Before You Start
+	1. Sl. No. format - Notice values like "v.", "i.", "ii.", "viii." - keep as string
+
+	2. Status column - Currently empty in your Excel - you'll populate this through the app
+
+	3. No of customer/instance - Has values like "NI ACT Case was filed" - this is a text field
+
+	4. Multiple entries per audit - Each row is a separate finding		
+		
+	1. User Roles: 
+	
+	
