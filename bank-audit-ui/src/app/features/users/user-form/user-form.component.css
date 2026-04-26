@@ -1,0 +1,12 @@
+.form-grid {
+  min-width: 380px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.toggle-wrap {
+  margin: 8px 0;
+}

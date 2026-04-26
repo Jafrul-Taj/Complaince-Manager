@@ -19,79 +19,8 @@ import { Assignment } from '../../../core/models/assignment.model';
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatSnackBarModule
   ],
-  template: `
-    <h2 mat-dialog-title>{{ isEdit ? 'Edit Finding' : 'Add Finding' }}</h2>
-    <mat-dialog-content>
-      <form [formGroup]="form" class="finding-form">
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Branch</mat-label>
-            <mat-select formControlName="branchId">
-              @for (a of assignments; track a.branchId) {
-                <mat-option [value]="a.branchId">{{ a.branchName }} ({{ a.branchCode }})</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Year</mat-label>
-            <mat-select formControlName="year">
-              @for (y of years; track y) {
-                <mat-option [value]="y">{{ y }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Sl. No</mat-label>
-            <input matInput formControlName="slNo" placeholder="e.g. i., ii., v." />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Finding Area</mat-label>
-            <input matInput formControlName="findingArea" />
-          </mat-form-field>
-        </div>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Finding Details</mat-label>
-          <textarea matInput formControlName="findingDetails" rows="4"></textarea>
-        </mat-form-field>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Risk Rating</mat-label>
-            <mat-select formControlName="riskRating">
-              <mat-option value="Low">Low</mat-option>
-              <mat-option value="Medium">Medium</mat-option>
-              <mat-option value="High">High</mat-option>
-              <mat-option value="Critical">Critical</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>No. of Instances</mat-label>
-            <input matInput formControlName="noOfInstances" placeholder="e.g. 3, NI ACT Case was filed" />
-          </mat-form-field>
-        </div>
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-raised-button color="primary" [disabled]="form.invalid || saving" (click)="save()">
-        {{ saving ? 'Saving...' : 'Save' }}
-      </button>
-    </mat-dialog-actions>
-  `,
-  styles: [`
-    .finding-form { min-width: 560px; padding-top: 8px; }
-    .form-row { display: flex; gap: 16px; }
-    .form-row mat-form-field { flex: 1; }
-    .full-width { width: 100%; }
-    mat-form-field { margin-bottom: 8px; }
-  `]
+  templateUrl: './finding-form.component.html',
+  styleUrl: './finding-form.component.css'
 })
 export class FindingFormComponent implements OnInit {
   isEdit: boolean;

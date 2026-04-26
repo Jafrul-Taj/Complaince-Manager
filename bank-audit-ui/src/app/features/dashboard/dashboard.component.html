@@ -1,0 +1,121 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Compliance Dashboard</h1>
+    <div class="header-controls">
+      <mat-form-field appearance="outline" style="width:120px">
+        <mat-label>Year</mat-label>
+        <mat-select [(value)]="selectedYear" (selectionChange)="loadAll()">
+          @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width:200px">
+        <mat-label>Branch</mat-label>
+        <mat-select [(value)]="selectedBranchId" (selectionChange)="loadExport()">
+          <mat-option [value]="null">All Branches</mat-option>
+          @for (b of branches; track b.id) {
+            <mat-option [value]="b.id">{{ b.branchName }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-raised-button color="accent" (click)="exportExcel()" [disabled]="exportData.length === 0">
+        <mat-icon>download</mat-icon> Export Excel
+      </button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-center">
+      <mat-spinner diameter="48" />
+      <p>Loading dashboard...</p>
+    </div>
+  } @else {
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      @for (kpi of kpis; track kpi.label) {
+        <mat-card class="kpi-card" [style.border-left-color]="kpi.color">
+          <mat-card-content>
+            <div class="kpi-top">
+              <div class="kpi-icon" [style.background-color]="kpi.bgColor">
+                <mat-icon [style.color]="kpi.color">{{ kpi.icon }}</mat-icon>
+              </div>
+              <div class="kpi-value">{{ kpi.value }}</div>
+            </div>
+            <div class="kpi-label">{{ kpi.label }}</div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-title>Risk Distribution</mat-card-title>
+        <mat-divider />
+        <mat-card-content>
+          <apx-chart
+            [series]="riskChart.series"
+            [chart]="riskChart.chart"
+            [labels]="riskChart.labels"
+            [colors]="riskChart.colors"
+            [legend]="riskChart.legend"
+            [plotOptions]="riskChart.plotOptions"
+            [dataLabels]="riskChart.dataLabels">
+          </apx-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-title>Rectification Status</mat-card-title>
+        <mat-divider />
+        <mat-card-content>
+          <apx-chart
+            [series]="statusChart.series"
+            [chart]="statusChart.chart"
+            [xaxis]="statusChart.xaxis"
+            [colors]="statusChart.colors"
+            [plotOptions]="statusChart.plotOptions"
+            [dataLabels]="statusChart.dataLabels">
+          </apx-chart>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-row">
+      <mat-card class="chart-card chart-wide">
+        <mat-card-title>Branch-wise Findings</mat-card-title>
+        <mat-divider />
+        <mat-card-content>
+          <apx-chart
+            [series]="branchChart.series"
+            [chart]="branchChart.chart"
+            [xaxis]="branchChart.xaxis"
+            [colors]="branchChart.colors"
+            [plotOptions]="branchChart.plotOptions"
+            [dataLabels]="branchChart.dataLabels">
+          </apx-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-title>Monthly Trend ({{ selectedYear }})</mat-card-title>
+        <mat-divider />
+        <mat-card-content>
+          <apx-chart
+            [series]="trendChart.series"
+            [chart]="trendChart.chart"
+            [xaxis]="trendChart.xaxis"
+            [stroke]="trendChart.stroke"
+            [markers]="trendChart.markers"
+            [colors]="trendChart.colors">
+          </apx-chart>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

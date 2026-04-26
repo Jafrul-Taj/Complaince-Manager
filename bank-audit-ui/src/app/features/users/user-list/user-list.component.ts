@@ -27,86 +27,8 @@ import { UserFormComponent } from '../user-form/user-form.component';
     MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatChipsModule, MatSnackBarModule, MatSlideToggleModule
   ],
-  template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>User Management</h1>
-        <button mat-raised-button color="primary" (click)="openForm()">
-          <mat-icon>person_add</mat-icon> Add User
-        </button>
-      </div>
-
-      <mat-card>
-        <mat-card-content>
-          <mat-form-field appearance="outline" style="width:300px; margin-bottom:16px">
-            <mat-label>Search users</mat-label>
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput (keyup)="applyFilter($event)" placeholder="Name, username, role..." />
-          </mat-form-field>
-
-          <table mat-table [dataSource]="dataSource" matSort class="full-width">
-            <ng-container matColumnDef="fullName">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Full Name</th>
-              <td mat-cell *matCellDef="let u">{{ u.fullName }}</td>
-            </ng-container>
-            <ng-container matColumnDef="username">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Username</th>
-              <td mat-cell *matCellDef="let u">{{ u.username }}</td>
-            </ng-container>
-            <ng-container matColumnDef="role">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
-              <td mat-cell *matCellDef="let u">
-                <span class="role-badge role-{{ u.role.toLowerCase() }}">{{ formatRole(u.role) }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="email">
-              <th mat-header-cell *matHeaderCellDef>Email</th>
-              <td mat-cell *matCellDef="let u">{{ u.email }}</td>
-            </ng-container>
-            <ng-container matColumnDef="isActive">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let u">
-                <span [class]="u.isActive ? 'status-active' : 'status-inactive'">
-                  {{ u.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let u">
-                <button mat-icon-button color="primary" (click)="openForm(u)" title="Edit">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="delete(u)" title="Delete">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="columns"></tr>
-            <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-            <tr class="mat-row" *matNoDataRow>
-              <td class="mat-cell" colspan="6" style="text-align:center; padding:24px">No users found.</td>
-            </tr>
-          </table>
-
-          <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons />
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .role-badge {
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    .role-operator          { background: #e3f2fd; color: #1565c0; }
-    .role-complianceofficer { background: #f3e5f5; color: #6a1b9a; }
-    .role-compliancehead    { background: #e8f5e9; color: #2e7d32; }
-    .status-active   { color: #2e7d32; font-weight: 500; }
-    .status-inactive { color: #9e9e9e; }
-  `]
+  templateUrl: './user-list.component.html',
+  styleUrl: './user-list.component.css'
 })
 export class UserListComponent implements OnInit {
   columns = ['fullName', 'username', 'role', 'email', 'isActive', 'actions'];

@@ -1,0 +1,27 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit Branch' : 'Add Branch' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" style="min-width:340px; padding-top:8px">
+    @if (!isEdit) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Branch Code</mat-label>
+        <input matInput formControlName="branchCode" placeholder="e.g. DHK001" />
+        <mat-hint>Will be saved in uppercase</mat-hint>
+      </mat-form-field>
+    }
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Branch Name</mat-label>
+      <input matInput formControlName="branchName" />
+    </mat-form-field>
+    @if (isEdit) {
+      <mat-slide-toggle formControlName="isActive" style="margin:8px 0">Active</mat-slide-toggle>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-raised-button color="primary" [disabled]="form.invalid || saving" (click)="save()">
+    {{ saving ? 'Saving...' : 'Save' }}
+  </button>
+</mat-dialog-actions>

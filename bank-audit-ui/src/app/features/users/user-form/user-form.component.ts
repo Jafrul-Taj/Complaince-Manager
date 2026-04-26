@@ -19,58 +19,8 @@ import { User } from '../../../core/models/user.model';
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatSlideToggleModule, MatSnackBarModule
   ],
-  template: `
-    <h2 mat-dialog-title>{{ isEdit ? 'Edit User' : 'Add User' }}</h2>
-    <mat-dialog-content>
-      <form [formGroup]="form" class="form-grid">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Full Name</mat-label>
-          <input matInput formControlName="fullName" />
-        </mat-form-field>
-
-        @if (!isEdit) {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Username</mat-label>
-            <input matInput formControlName="username" />
-          </mat-form-field>
-        }
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" type="email" />
-        </mat-form-field>
-
-        @if (!isEdit) {
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Role</mat-label>
-            <mat-select formControlName="role">
-              <mat-option value="ComplianceOfficer">Compliance Officer</mat-option>
-              <mat-option value="ComplianceHead">Compliance Head</mat-option>
-              <mat-option value="Operator">Operator</mat-option>
-            </mat-select>
-          </mat-form-field>
-        }
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>{{ isEdit ? 'New Password (leave blank to keep)' : 'Password' }}</mat-label>
-          <input matInput formControlName="password" type="password" />
-        </mat-form-field>
-
-        @if (isEdit) {
-          <div style="margin: 8px 0">
-            <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
-          </div>
-        }
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-raised-button color="primary" [disabled]="form.invalid || saving" (click)="save()">
-        {{ saving ? 'Saving...' : 'Save' }}
-      </button>
-    </mat-dialog-actions>
-  `,
-  styles: [`.full-width { width: 100%; margin-bottom: 8px; } .form-grid { min-width: 380px; }`]
+  templateUrl: './user-form.component.html',
+  styleUrl: './user-form.component.css'
 })
 export class UserFormComponent implements OnInit {
   isEdit: boolean;

@@ -8,20 +8,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   selector: 'app-main-layout',
   standalone: true,
   imports: [CommonModule, RouterModule, MatSidenavModule, SidebarComponent],
-  template: `
-    <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav mode="side" opened class="sidenav">
-        <app-sidebar />
-      </mat-sidenav>
-      <mat-sidenav-content class="main-content">
-        <router-outlet />
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  `,
-  styles: [`
-    .sidenav-container { height: 100vh; }
-    .sidenav { width: 240px; background: #1f1f1f; }
-    .main-content { background: #f5f5f5; overflow-y: auto; }
-  `]
+  templateUrl: './main-layout.component.html',
+  styleUrl: './main-layout.component.css'
 })
 export class MainLayoutComponent {}

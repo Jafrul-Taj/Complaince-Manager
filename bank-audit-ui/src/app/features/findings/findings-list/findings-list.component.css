@@ -1,0 +1,24 @@
+.filters-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filters-row mat-form-field {
+  min-width: 160px;
+}
+
+.status-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.details-cell {
+  max-width: 260px;
+}
+
+.full-width {
+  width: 100%;
+}
