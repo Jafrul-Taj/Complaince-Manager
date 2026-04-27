@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using BankAudit.API.Data;
 using BankAudit.API.Middleware;
 using BankAudit.API.Services;
@@ -42,7 +43,9 @@ builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<IFindingService, FindingService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger with JWT Bearer support
