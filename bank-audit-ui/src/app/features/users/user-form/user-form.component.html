@@ -2,15 +2,20 @@
 
 <mat-dialog-content>
   <form [formGroup]="form" class="form-grid">
-    <mat-form-field appearance="outline" class="full-width">
+
+    <mat-form-field appearance="outline" class="full-width" [class.autofill-field]="isComplianceOfficer && !isEdit">
       <mat-label>Full Name</mat-label>
-      <input matInput formControlName="fullName" />
+      <input matInput formControlName="fullName"
+             class="primary-input"
+             [readonly]="isComplianceOfficer && !isEdit" />
     </mat-form-field>
 
     @if (!isEdit) {
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" class="full-width" [class.autofill-field]="isComplianceOfficer">
         <mat-label>Username</mat-label>
-        <input matInput formControlName="username" />
+        <input matInput formControlName="username"
+               class="primary-input"
+               [readonly]="isComplianceOfficer" />
       </mat-form-field>
     }
 
@@ -28,6 +33,49 @@
           <mat-option value="Operator">Operator</mat-option>
         </mat-select>
       </mat-form-field>
+
+      @if (isComplianceOfficer) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>ICCD Employee</mat-label>
+          <mat-select formControlName="iccdEmployee" [compareWith]="compareEmployees">
+            @if (loadingEmployees) {
+              <mat-option disabled>Loading employees…</mat-option>
+            } @else if (!employees.length) {
+              <mat-option disabled>No employees found</mat-option>
+            } @else {
+              @for (emp of employees; track emp.employeeId) {
+                <mat-option [value]="emp">{{ emp.name }}</mat-option>
+              }
+            }
+          </mat-select>
+          @if (loadingEmployees) {
+            <mat-hint>
+              <mat-spinner diameter="14" style="display:inline-block;vertical-align:middle;margin-right:4px"></mat-spinner>
+              Loading…
+            </mat-hint>
+          }
+          @if (form.get('iccdEmployee')?.hasError('required') && form.get('iccdEmployee')?.touched) {
+            <mat-error>ICCD Employee is required for Compliance Officer</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Employee ID & Designation info card -->
+        <div class="emp-info-card">
+          <div class="emp-info-item">
+            <span class="emp-info-label">Employee ID</span>
+            <span class="emp-info-value">
+              {{ form.get('employeeCodeDisplay')?.value || '—' }}
+            </span>
+          </div>
+          <div class="emp-info-divider"></div>
+          <div class="emp-info-item">
+            <span class="emp-info-label">Designation</span>
+            <span class="emp-info-value">
+              {{ form.get('designationDisplay')?.value || '—' }}
+            </span>
+          </div>
+        </div>
+      }
     }
 
     <mat-form-field appearance="outline" class="full-width">
@@ -40,12 +88,13 @@
         <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
       </div>
     }
+
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button mat-dialog-close>Cancel</button>
   <button mat-raised-button color="primary" [disabled]="form.invalid || saving" (click)="save()">
-    {{ saving ? 'Saving...' : 'Save' }}
+    {{ saving ? 'Saving…' : 'Save' }}
   </button>
 </mat-dialog-actions>

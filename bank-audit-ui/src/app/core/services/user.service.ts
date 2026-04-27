@@ -18,6 +18,8 @@ export class UserService {
   }
 
   create(request: CreateUserRequest) {
+    console.log('Sending request to:', this.API);
+    console.log('Request payload:', JSON.stringify(request, null, 2));
     return this.http.post<User>(this.API, request);
   }
 

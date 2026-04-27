@@ -264,5 +264,84 @@ public static class DataSeeder
             context.Branches.AddRange(branches);
             await context.SaveChangesAsync();
         }
+
+        if (!context.ICCDEmployees.Any())
+        {
+            var employees = new List<ICCDEmployee>
+            {
+                // RBIA Wing - Audit
+                new() { EmployeeId = "5486",  Name = "Mr. Rashedur Rahman",             Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4555",  Name = "Mr. Md. Kalim Uddin Mozumder",    Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4566",  Name = "Mr. Md. Anwar Hossain",           Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3277",  Name = "Mr. Md. Ashraf Uddin Bhuiyan",    Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3773",  Name = "Mr. Md. Shahidul Islam Mollah",   Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3385",  Name = "Mr. Md. Faruk Hossain",           Designation = "FVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3681",  Name = "Mr. Md. Abdur Rob Howlader",      Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "2932",  Name = "Mr. Kazi Zahirul Islam",          Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4606",  Name = "Mr. Chapal Barua",                Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "2458",  Name = "Mr. Ziaul Hasan Iftiar Mahbub",   Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "5447",  Name = "Mr. Kazi Rakib Hossan",           Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3611",  Name = "Mr. Md. Kamal Hossain",           Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "6875",  Name = "Mr. Mohammed Mohiuddin Biswas",   Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3535",  Name = "Mr. Abdul Ahad",                  Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4199",  Name = "Mr. Mahmudul Hasan",              Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "2600",  Name = "Ms. Fatema-Tuj-Johura",           Designation = "VP",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "741",   Name = "Mr. Md. Saiful Kabir",            Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "7385",  Name = "Mr. Mohammad Anamul Haque",       Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3609",  Name = "Mr. Md. Kamal Sarder",            Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4200",  Name = "Mr. Rafiul Bari Khan",            Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "5873",  Name = "Mr. Sunnyeat Ismat Omith",        Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4102",  Name = "Mr. Fahad Ahmed Bhuiyan",         Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8072",  Name = "Mr. Mohammad Omar Faruque",       Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "3811",  Name = "Mr. Muhammad Mahbubur Rahman",    Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4190",  Name = "Mr. S.M. Oly Ahad",              Designation = "FAVP", Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8747",  Name = "Mr. Akram Uddin Majumder",        Designation = "AVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "5334",  Name = "Mr. Khandaker Abdul Muntashir",   Designation = "AVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "6048",  Name = "Mr. Md. Mehrab Khan",             Designation = "AVP",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8731",  Name = "Mr. Ahmad Sayeed Russel",         Designation = "SEO",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8739",  Name = "Mr. Md. Omar Faruk",              Designation = "SEO",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8071",  Name = "Mr. Imtiaz Hossain",              Designation = "SEO",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8678",  Name = "Mr. Feroz Hossain",               Designation = "SEO",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "10302", Name = "Mr. Ishtiaq Mahmud Emon",         Designation = "SEO",  Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8750",  Name = "Mr. Kawsar Mohammad Farhad",      Designation = "EO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8741",  Name = "Mr. Kazi Shahriar Sonnet",        Designation = "EO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "4052",  Name = "Mr. Aminul Islam",                Designation = "EO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "6323",  Name = "Mr. Raihan Kabir",                Designation = "EO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "6317",  Name = "Mr. Razib Khan",                  Designation = "EO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8751",  Name = "Mr. Md. Riaz Uddin",              Designation = "SO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8913",  Name = "Mr. Md. Mainuddin",               Designation = "SO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "10274", Name = "Mr. Monir Ahammad Bhuiyan",       Designation = "SO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "10301", Name = "Mr. Ashadus Jaman",               Designation = "SO",   Unit = "Audit",      Wing = "RBIA" },
+                new() { EmployeeId = "8048",  Name = "Mr. Mahede Hasan Shaoun",         Designation = "JO",   Unit = "Audit",      Wing = "RBIA" },
+
+                // FxAudit Wing - Audit
+                new() { EmployeeId = "5438",  Name = "Mr. Md. Amirul Islam",            Designation = "VP",   Unit = "Audit",      Wing = "FxAudit" },
+                new() { EmployeeId = "8745",  Name = "Ms. Lubana Rahman",               Designation = "SEO",  Unit = "Audit",      Wing = "FxAudit" },
+
+                // Special Investigation Wing - Audit
+                new() { EmployeeId = "3479",  Name = "Mr. Muhammad Abdul Awal",         Designation = "EO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "3270",  Name = "Mr. Wayes Ahmed",                 Designation = "EO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "5702",  Name = "Mr. Mezbaul Haider",              Designation = "SO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "5286",  Name = "Mr. S.Md. Badiul Akbar",          Designation = "SO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "8079",  Name = "Mr. Jakir Hossain",               Designation = "SO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "6402",  Name = "Mr. Md. Rafiqur Rahman",          Designation = "SO",   Unit = "Audit",      Wing = "Special Investigation" },
+                new() { EmployeeId = "8027",  Name = "Mr. Wahidul Islam",               Designation = "JO",   Unit = "Audit",      Wing = "Special Investigation" },
+
+                // Compliance Wing - Compliance
+                new() { EmployeeId = "2959",  Name = "Mr. Md. Wasim Uddin Qureshi",     Designation = "FAVP", Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "6316",  Name = "Mr. Muhammad Sadequr Rahman",     Designation = "SEO",  Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "6324",  Name = "Mr. Mohammad Masuf Bin Nuruddin", Designation = "SEO",  Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "9317",  Name = "Mr. Rathindra Nath Mondal",       Designation = "EO",   Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "9660",  Name = "Mr. Ujjwal Kanthi Dhar",          Designation = "EO",   Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "9661",  Name = "Ms. Rownak Tabassum Prima",       Designation = "EO",   Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "8200",  Name = "Mr. Sakif Samih-Ul-Haq",          Designation = "SO",   Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "9352",  Name = "Mr. S.M. Jafrul Hasan",           Designation = "OFF",  Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "7957",  Name = "Mr. Md. Salman Al-Mamun",         Designation = "OFF",  Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "10228", Name = "Mr. Samzid Khan",                 Designation = "JO",   Unit = "Compliance", Wing = "Compliance" },
+            };
+
+            context.ICCDEmployees.AddRange(employees);
+            await context.SaveChangesAsync();
+        }
     }
 }

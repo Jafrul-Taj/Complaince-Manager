@@ -53,9 +53,12 @@ public class ICCDEmployeeController : ControllerBase
     [Authorize(Roles = "Operator")]
     public async Task<IActionResult> Create([FromBody] ICCDEmployeeCreateDto dto)
     {
+        if (await _db.ICCDEmployees.AnyAsync(e => e.EmployeeId == dto.EmployeeId))
+            return Conflict(new { message = $"Employee ID '{dto.EmployeeId}' already exists." });
+
         var employee = new ICCDEmployee
         {
-            Id = Guid.NewGuid().ToString("N")[..8],
+            EmployeeId = dto.EmployeeId.Trim(),
             Name = dto.Name.Trim(),
             Designation = dto.Designation.Trim(),
             Unit = dto.Unit.Trim(),
@@ -101,6 +104,7 @@ public class ICCDEmployeeController : ControllerBase
     private static ICCDEmployeeResponseDto ToDto(ICCDEmployee e) => new()
     {
         Id = e.Id,
+        EmployeeId = e.EmployeeId,
         Name = e.Name,
         Designation = e.Designation,
         Unit = e.Unit,

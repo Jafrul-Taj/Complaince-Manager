@@ -1,5 +1,5 @@
 .form-grid {
-  min-width: 380px;
+  min-width: 420px;
 }
 
 .full-width {
@@ -7,6 +7,78 @@
   margin-bottom: 8px;
 }
 
+/* ── Full Name / Username — bigger, bolder text ── */
+.primary-input {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #1a237e !important;
+  letter-spacing: 0.2px;
+}
+
+/* Subtle tint on the field wrapper when auto-filled from ICCD */
+.autofill-field {
+  --mdc-outlined-text-field-container-shape: 6px;
+}
+
+.autofill-field .mat-mdc-text-field-wrapper {
+  background-color: #f5f7ff;
+}
+
+/* ── Employee ID / Designation info card ── */
+.emp-info-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: linear-gradient(135deg, #e8eaf6 0%, #ede7f6 100%);
+  border: 1.5px solid #9fa8da;
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 6px rgba(63, 81, 181, 0.12);
+}
+
+.emp-info-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-info-divider {
+  width: 1.5px;
+  background: #9fa8da;
+  margin: 0 20px;
+  border-radius: 2px;
+}
+
+.emp-info-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #5c6bc0;
+}
+
+.emp-info-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a237e;
+  letter-spacing: 0.3px;
+  min-height: 24px;
+}
+
+/* ── Misc ── */
 .toggle-wrap {
   margin: 8px 0;
+}
+
+.info-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.half-width {
+  flex: 1;
+  min-width: 0;
 }

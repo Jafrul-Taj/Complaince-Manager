@@ -4,6 +4,9 @@ namespace BankAudit.API.DTOs.ICCDEmployees;
 
 public class ICCDEmployeeCreateDto
 {
+    [Required, MaxLength(20)]
+    public string EmployeeId { get; set; } = string.Empty;
+
     [Required, MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 
