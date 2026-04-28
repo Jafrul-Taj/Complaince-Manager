@@ -1,12 +1,304 @@
-.status-active {
-  color: #2e7d32;
-  font-weight: 500;
+/* ── Header ───────────────────────────────────────────── */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.status-inactive {
-  color: #9e9e9e;
+.total-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 2px 10px;
+  letter-spacing: 0.2px;
 }
 
-.full-width {
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 18px;
+  height: 38px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.30);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.add-btn:hover {
+  background: #b71c1c;
+  box-shadow: 0 4px 10px rgba(198, 40, 40, 0.38);
+}
+
+.add-btn-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Table card ───────────────────────────────────────── */
+.table-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────── */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 0 12px;
+  height: 36px;
+  width: 280px;
+  transition: border-color 0.15s;
+}
+
+.search-wrap:focus-within {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.08);
+}
+
+.search-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #374151;
+  background: transparent;
   width: 100%;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+/* ── Table wrapper ────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+}
+
+/* ── Angular Material table overrides ────────────────── */
+::ng-deep .branch-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;   /* locks column widths; no more auto-stretching */
+}
+
+::ng-deep .branch-table .mat-mdc-header-row {
+  background: #f9fafb;
+  height: 40px;
+}
+
+::ng-deep .branch-table .mat-mdc-header-cell {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 10px;
+  overflow: hidden;
+}
+
+::ng-deep .branch-table .mat-mdc-row {
+  height: 42px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+}
+
+::ng-deep .branch-table .mat-mdc-row:last-child {
+  border-bottom: none;
+}
+
+::ng-deep .branch-table .mat-mdc-row:hover {
+  background: #fff5f5;
+}
+
+::ng-deep .branch-table .mat-mdc-cell {
+  font-size: 13px;
+  color: #374151;
+  padding: 0 10px;
+  border-bottom: none;
+  overflow: hidden;
+}
+
+/* ── Column widths (via Material's auto-generated .mat-column-* classes) ── */
+::ng-deep .branch-table .mat-column-branchCode {
+  width: 80px;
+}
+
+::ng-deep .branch-table .mat-column-branchName {
+  /* takes all remaining space; name gets clipped cleanly instead of pushing status */
+}
+
+::ng-deep .branch-table .mat-column-isActive {
+  width: 110px;
+  white-space: nowrap;
+}
+
+::ng-deep .branch-table .mat-column-actions {
+  width: 90px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Branch code pill ─────────────────────────────────── */
+.code-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+  color: #c62828;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 5px;
+  padding: 2px 7px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Name cell ────────────────────────────────────────── */
+.name-cell {
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status badges ────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  letter-spacing: 0.3px;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge-active {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-active .badge-dot {
+  background: #22c55e;
+}
+
+.badge-inactive {
+  background: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.badge-inactive .badge-dot {
+  background: #d1d5db;
+}
+
+/* ── Action buttons ───────────────────────────────────── */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.action-btn mat-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+  line-height: 17px;
+}
+
+.edit-btn {
+  color: #4b5563;
+  margin-right: 2px;
+}
+
+.edit-btn:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.delete-btn {
+  color: #9ca3af;
+}
+
+.delete-btn:hover {
+  background: #fff5f5;
+  color: #c62828;
+}
+
+/* ── Empty state ──────────────────────────────────────── */
+.empty-row {
+  text-align: center;
+  padding: 40px 24px !important;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  color: #d1d5db;
+}
+
+/* ── Paginator ────────────────────────────────────────── */
+::ng-deep .compact-paginator {
+  font-size: 12px;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+::ng-deep .compact-paginator .mat-mdc-paginator-container {
+  padding: 4px 16px;
+  min-height: 44px;
 }

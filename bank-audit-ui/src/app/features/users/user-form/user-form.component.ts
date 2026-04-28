@@ -37,7 +37,7 @@ export class UserFormComponent implements OnInit, OnDestroy {
 
   form = this.fb.group({
     fullName:             ['', Validators.required],
-    username:             ['', Validators.required],
+    username:             [''],
     email:                ['', Validators.email],
     role:                 ['ComplianceOfficer'],
     password:             [''],
@@ -68,7 +68,13 @@ export class UserFormComponent implements OnInit, OnDestroy {
   ngOnInit() {
     if (this.isEdit) {
       const u = this.data.user!;
-      this.form.patchValue({ fullName: u.fullName, email: u.email, isActive: u.isActive });
+      this.form.patchValue({
+        fullName: u.fullName,
+        email: u.email,
+        isActive: u.isActive,
+        username: u.username,
+        role: u.role
+      });
       return;
     }
 
