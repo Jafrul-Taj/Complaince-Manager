@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -11,6 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { AssignmentService } from '../../../core/services/assignment.service';
@@ -19,6 +21,7 @@ import { BranchService } from '../../../core/services/branch.service';
 import { Assignment } from '../../../core/models/assignment.model';
 import { User } from '../../../core/models/user.model';
 import { Branch } from '../../../core/models/branch.model';
+import { IccdEmployeeService } from '../../../core/services/iccd-employee.service';
 
 @Component({
   selector: 'app-assignment-manager',
@@ -26,18 +29,21 @@ import { Branch } from '../../../core/models/branch.model';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
     MatInputModule, MatAutocompleteModule, MatSelectModule, MatButtonModule, MatIconModule,
-    MatTableModule, MatSnackBarModule, MatChipsModule
+    MatTableModule, MatSortModule, MatSnackBarModule, MatChipsModule
   ],
   templateUrl: './assignment-manager.component.html',
   styleUrl: './assignment-manager.component.css'
 })
-export class AssignmentManagerComponent implements OnInit {
+export class AssignmentManagerComponent implements OnInit, AfterViewInit {
   officers: User[] = [];
   branches: Branch[] = [];
   assignments: Assignment[] = [];
+  dataSource = new MatTableDataSource<Assignment>();
+  @ViewChild(MatSort) sort!: MatSort;
   columns = ['officer', 'branch', 'year', 'actions'];
   saving = false;
   editingId: number | null = null;
+  searchTerm = '';
 
   officerSearchControl = new FormControl<string | User | null>('');
   branchSearchControl = new FormControl<string | Branch | null>('');
@@ -56,6 +62,7 @@ export class AssignmentManagerComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private assignSvc: AssignmentService,
+    private iccdSvc: IccdEmployeeService,
     private userSvc: UserService,
     private branchSvc: BranchService,
     private snack: MatSnackBar
@@ -93,8 +100,29 @@ export class AssignmentManagerComponent implements OnInit {
     this.loadAssignments();
   }
 
+  ngAfterViewInit() {
+    this.dataSource.sort = this.sort;
+  }
+
   loadAssignments() {
-    this.assignSvc.getAll().subscribe(a => this.assignments = a);
+    this.assignSvc.getAll().subscribe(a => {
+      this.assignments = a;
+      this.dataSource.data = a;
+      this.dataSource.filter = this.searchTerm || '';
+    });
+  }
+
+  onSearch(event: Event) {
+    const filterValue = (event.target as HTMLInputElement).value.toLowerCase().trim();
+    this.searchTerm = filterValue;
+    this.dataSource.filter = filterValue;
+    this.dataSource.filterPredicate = (data: Assignment, filter: string) => {
+      const userMatch = data.userFullName.toLowerCase().includes(filter);
+      const branchNameMatch = data.branchName.toLowerCase().includes(filter);
+      const branchCodeMatch = data.branchCode.toLowerCase().includes(filter);
+      const yearMatch = data.year.toString().includes(filter);
+      return userMatch || branchNameMatch || branchCodeMatch || yearMatch;
+    };
   }
 
   get isEditMode(): boolean {
