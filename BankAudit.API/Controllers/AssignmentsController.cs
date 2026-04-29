@@ -28,6 +28,13 @@ public class AssignmentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] AssignBranchRequest request)
+    {
+        var result = await _service.UpdateAsync(id, request);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

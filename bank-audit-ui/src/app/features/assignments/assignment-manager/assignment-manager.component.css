@@ -8,6 +8,17 @@
   margin-bottom: 0;
 }
 
+.filter-field {
+  margin-bottom: 8px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .full-width {
   width: 100%;
   margin-bottom: 12px;

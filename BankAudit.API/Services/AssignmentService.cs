@@ -49,6 +49,22 @@ public class AssignmentService : IAssignmentService
         return ToDto(assignment);
     }
 
+    public async Task<AssignmentDto?> UpdateAsync(int id, AssignBranchRequest request)
+    {
+        var assignment = await _db.UserBranchAssignments.FindAsync(id);
+        if (assignment is null) return null;
+
+        assignment.UserId = request.UserId;
+        assignment.BranchId = request.BranchId;
+        assignment.Year = request.Year;
+
+        await _db.SaveChangesAsync();
+        await _db.Entry(assignment).Reference(a => a.User).LoadAsync();
+        await _db.Entry(assignment).Reference(a => a.Branch).LoadAsync();
+
+        return ToDto(assignment);
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var assignment = await _db.UserBranchAssignments.FindAsync(id);

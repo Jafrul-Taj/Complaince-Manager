@@ -21,6 +21,10 @@ export class AssignmentService {
     return this.http.post<Assignment>(this.API, request);
   }
 
+  update(id: number, request: AssignBranchRequest) {
+    return this.http.put<Assignment>(`${this.API}/${id}`, request);
+  }
+
   delete(id: number) {
     return this.http.delete(`${this.API}/${id}`);
   }

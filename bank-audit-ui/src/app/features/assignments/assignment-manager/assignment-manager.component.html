@@ -8,23 +8,25 @@
     <mat-card class="assign-form-card">
       <mat-card-title>Assign Branch to Officer</mat-card-title>
       <mat-card-content>
-        <form [formGroup]="form" (ngSubmit)="assign()" style="padding-top:16px">
+        <form [formGroup]="form" (ngSubmit)="save()" style="padding-top:16px">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Compliance Officer</mat-label>
-            <mat-select formControlName="userId">
-              @for (u of officers; track u.id) {
-                <mat-option [value]="u.id">{{ u.fullName }}</mat-option>
-              }
-            </mat-select>
+            <input type="text" matInput [formControl]="officerSearchControl" [matAutocomplete]="officerAuto" />
+            <mat-autocomplete #officerAuto="matAutocomplete" [displayWith]="displayOfficer" (optionSelected)="selectOfficer($event.option.value)">
+              <mat-option *ngFor="let u of filteredOfficers$ | async" [value]="u">
+                {{ u.fullName }}
+              </mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Branch</mat-label>
-            <mat-select formControlName="branchId">
-              @for (b of branches; track b.id) {
-                <mat-option [value]="b.id">{{ b.branchName }} ({{ b.branchCode }})</mat-option>
-              }
-            </mat-select>
+            <input type="text" matInput [formControl]="branchSearchControl" [matAutocomplete]="branchAuto" />
+            <mat-autocomplete #branchAuto="matAutocomplete" [displayWith]="displayBranch" (optionSelected)="selectBranch($event.option.value)">
+              <mat-option *ngFor="let b of filteredBranches$ | async" [value]="b">
+                {{ b.branchName }} ({{ b.branchCode }})
+              </mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
@@ -36,11 +38,16 @@
             </mat-select>
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="submit"
-                  [disabled]="form.invalid || saving" class="full-width">
-            <mat-icon>assignment_turned_in</mat-icon>
-            {{ saving ? 'Assigning...' : 'Assign' }}
-          </button>
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit"
+                    [disabled]="form.invalid || saving" class="full-width">
+              <mat-icon>assignment_turned_in</mat-icon>
+              {{ saving ? (isEditMode ? 'Updating...' : 'Assigning...') : (isEditMode ? 'Update' : 'Assign') }}
+            </button>
+            <button mat-button color="warn" type="button" *ngIf="isEditMode" (click)="cancelEdit()">
+              Cancel
+            </button>
+          </div>
         </form>
       </mat-card-content>
     </mat-card>
@@ -65,6 +72,9 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let a">
+              <button mat-icon-button color="primary" (click)="editAssignment(a)" title="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
               <button mat-icon-button color="warn" (click)="remove(a)" title="Remove">
                 <mat-icon>remove_circle</mat-icon>
               </button>

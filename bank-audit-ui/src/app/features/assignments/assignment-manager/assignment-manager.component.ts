@@ -1,15 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 import { AssignmentService } from '../../../core/services/assignment.service';
 import { UserService } from '../../../core/services/user.service';
 import { BranchService } from '../../../core/services/branch.service';
@@ -21,8 +24,8 @@ import { Branch } from '../../../core/models/branch.model';
   selector: 'app-assignment-manager',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatButtonModule, MatIconModule,
+    CommonModule, FormsModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
+    MatInputModule, MatAutocompleteModule, MatSelectModule, MatButtonModule, MatIconModule,
     MatTableModule, MatSnackBarModule, MatChipsModule
   ],
   templateUrl: './assignment-manager.component.html',
@@ -34,6 +37,12 @@ export class AssignmentManagerComponent implements OnInit {
   assignments: Assignment[] = [];
   columns = ['officer', 'branch', 'year', 'actions'];
   saving = false;
+  editingId: number | null = null;
+
+  officerSearchControl = new FormControl<string | User | null>('');
+  branchSearchControl = new FormControl<string | Branch | null>('');
+  filteredOfficers$: Observable<User[]> = new Observable<User[]>();
+  filteredBranches$: Observable<Branch[]> = new Observable<Branch[]>();
 
   years: number[] = [];
   currentYear = new Date().getFullYear();
@@ -55,6 +64,28 @@ export class AssignmentManagerComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.filteredOfficers$ = this.officerSearchControl.valueChanges.pipe(
+      startWith(''),
+      map(value => this.filterOfficers(value))
+    );
+
+    this.filteredBranches$ = this.branchSearchControl.valueChanges.pipe(
+      startWith(''),
+      map(value => this.filterBranches(value))
+    );
+
+    this.officerSearchControl.valueChanges.subscribe(value => {
+      if (typeof value === 'string') {
+        this.form.get('userId')?.setValue(null);
+      }
+    });
+
+    this.branchSearchControl.valueChanges.subscribe(value => {
+      if (typeof value === 'string') {
+        this.form.get('branchId')?.setValue(null);
+      }
+    });
+
     this.userSvc.getAll().subscribe(users =>
       this.officers = users.filter(u => u.role === 'ComplianceOfficer' && u.isActive)
     );
@@ -64,6 +95,111 @@ export class AssignmentManagerComponent implements OnInit {
 
   loadAssignments() {
     this.assignSvc.getAll().subscribe(a => this.assignments = a);
+  }
+
+  get isEditMode(): boolean {
+    return this.editingId !== null;
+  }
+
+  editAssignment(assignment: Assignment) {
+    this.editingId = assignment.id;
+    this.form.patchValue({
+      userId: assignment.userId,
+      branchId: assignment.branchId,
+      year: assignment.year
+    });
+
+    const officer = this.officers.find(u => u.id === assignment.userId) ?? null;
+    const branch = this.branches.find(b => b.id === assignment.branchId) ?? null;
+    this.officerSearchControl.setValue(officer, { emitEvent: false });
+    this.branchSearchControl.setValue(branch, { emitEvent: false });
+  }
+
+  cancelEdit() {
+    this.editingId = null;
+    this.form.reset({
+      userId: null,
+      branchId: null,
+      year: this.currentYear
+    });
+    this.officerSearchControl.setValue('');
+    this.branchSearchControl.setValue('');
+  }
+
+  save() {
+    if (this.form.invalid) return;
+    if (this.isEditMode) {
+      this.update();
+      return;
+    }
+    this.assign();
+  }
+
+  update() {
+    if (this.editingId === null || this.form.invalid) return;
+    this.saving = true;
+    const v = this.form.value;
+    this.assignSvc.update(this.editingId, {
+      userId: v.userId!,
+      branchId: v.branchId!,
+      year: v.year!
+    }).subscribe({
+      next: () => {
+        this.snack.open('Assignment updated', 'OK', { duration: 3000 });
+        this.saving = false;
+        this.cancelEdit();
+        this.loadAssignments();
+      },
+      error: () => {
+        this.saving = false;
+        this.snack.open('Failed to update assignment', 'OK', { duration: 3000 });
+      }
+    });
+  }
+
+  private getSearchValue(value: string | User | Branch | null): string {
+    if (!value) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return 'fullName' in value ? value.fullName : value.branchName;
+  }
+
+  private filterOfficers(value: string | User | null): User[] {
+    const filterValue = this.getSearchValue(value).toLowerCase().trim();
+    return filterValue
+      ? this.officers.filter(u => u.fullName.toLowerCase().includes(filterValue))
+      : this.officers;
+  }
+
+  private filterBranches(value: string | Branch | null): Branch[] {
+    const filterValue = this.getSearchValue(value).toLowerCase().trim();
+    return filterValue
+      ? this.branches.filter(b =>
+          b.branchName.toLowerCase().includes(filterValue) ||
+          b.branchCode.toLowerCase().includes(filterValue)
+        )
+      : this.branches;
+  }
+
+  selectOfficer(user: User) {
+    this.form.get('userId')?.setValue(user.id);
+    this.officerSearchControl.setValue(user, { emitEvent: false });
+  }
+
+  selectBranch(branch: Branch) {
+    this.form.get('branchId')?.setValue(branch.id);
+    this.branchSearchControl.setValue(branch, { emitEvent: false });
+  }
+
+  displayOfficer(user: User | null): string {
+    return user ? user.fullName : '';
+  }
+
+  displayBranch(branch: Branch | null): string {
+    return branch ? `${branch.branchName} (${branch.branchCode})` : '';
   }
 
   assign() {
