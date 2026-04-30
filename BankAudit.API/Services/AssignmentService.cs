@@ -1,6 +1,7 @@
 using BankAudit.API.Data;
 using BankAudit.API.DTOs.Assignments;
 using BankAudit.API.Entities;
+using BankAudit.API.Enums;
 using BankAudit.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,38 @@ public class AssignmentService : IAssignmentService
             .Where(a => a.UserId == userId)
             .Select(a => ToDto(a))
             .ToListAsync();
+    }
+
+    public async Task<List<AssignmentSummaryDto>> GetMyAssignmentSummaryAsync(int officerId)
+    {
+        var assignments = await _db.UserBranchAssignments
+            .Include(a => a.Branch)
+            .Where(a => a.UserId == officerId)
+            .OrderByDescending(a => a.Year)
+            .ThenBy(a => a.Branch.BranchName)
+            .ToListAsync();
+
+        var result = new List<AssignmentSummaryDto>();
+        foreach (var a in assignments)
+        {
+            var findings = await _db.AuditFindings
+                .Where(f => f.AssignedOfficerId == officerId && f.BranchId == a.BranchId && f.Year == a.Year)
+                .ToListAsync();
+
+            result.Add(new AssignmentSummaryDto
+            {
+                Id = a.Id,
+                BranchId = a.BranchId,
+                BranchName = a.Branch?.BranchName ?? string.Empty,
+                BranchCode = a.Branch?.BranchCode ?? string.Empty,
+                Year = a.Year,
+                TotalFindings = findings.Count,
+                PendingFindings = findings.Count(f => f.RectificationStatus == RectificationStatus.Pending),
+                InProgressFindings = findings.Count(f => f.RectificationStatus == RectificationStatus.InProgress),
+                RectifiedFindings = findings.Count(f => f.RectificationStatus == RectificationStatus.Rectified)
+            });
+        }
+        return result;
     }
 
     public async Task<AssignmentDto> CreateAsync(AssignBranchRequest request)

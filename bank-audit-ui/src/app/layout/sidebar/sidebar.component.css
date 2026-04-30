@@ -15,11 +15,39 @@
   border-bottom: 2px solid #c62828;
 }
 
-.logo-icon {
-  font-size: 28px;
-  width: 28px;
-  height: 28px;
-  color: #ef5350;
+.logo-image {
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  
+  /* Invert dark text to white - convert dark UCB text to white */
+  filter: brightness(0) invert(1) contrast(1.1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  
+  /* Circular background container effect */
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  
+  /* Glow and depth effects */
+  box-shadow: 0 0 8px rgba(239, 83, 80, 0.3), 
+              inset 0 0 8px rgba(255, 255, 255, 0.1);
+  
+  /* Smooth transitions for hover effect */
+  transition: all 0.3s ease-in-out;
+  
+  /* Ensure the logo appears crisp */
+  image-rendering: crisp-edges;
+}
+
+.sidebar-header:hover .logo-image {
+  /* Hover effect - enhanced glow with inverted colors */
+  background-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 12px rgba(239, 83, 80, 0.5), 
+              inset 0 0 8px rgba(255, 255, 255, 0.15);
+  filter: brightness(0) invert(1) contrast(1.2) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  transform: scale(1.08);
 }
 
 .user-info {

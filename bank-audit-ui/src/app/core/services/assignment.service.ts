@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Assignment, AssignBranchRequest } from '../models/assignment.model';
+import { Assignment, AssignBranchRequest, AssignmentSummary } from '../models/assignment.model';
 
 @Injectable({ providedIn: 'root' })
 export class AssignmentService {
@@ -15,6 +15,10 @@ export class AssignmentService {
 
   getByUser(userId: number) {
     return this.http.get<Assignment[]>(`${this.API}/user/${userId}`);
+  }
+
+  getMySummary() {
+    return this.http.get<AssignmentSummary[]>(`${this.API}/my-summary`);
   }
 
   create(request: AssignBranchRequest) {

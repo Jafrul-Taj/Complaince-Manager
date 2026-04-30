@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
@@ -49,20 +50,39 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
+  branchLabel = '';
+
   constructor(
     private findingSvc: FindingService,
     private assignSvc: AssignmentService,
     private auth: AuthService,
     private dialog: MatDialog,
-    private snack: MatSnackBar
+    private snack: MatSnackBar,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit() {
     const uid = this.auth.userId();
     if (uid) {
-      this.assignSvc.getByUser(uid).subscribe(a => this.myAssignments = a);
+      this.assignSvc.getByUser(uid).subscribe(a => {
+        this.myAssignments = a;
+        // read query params for pre-filtering from My Assignments page
+        this.route.queryParams.subscribe(params => {
+          if (params['branchId']) this.selectedBranchId = +params['branchId'];
+          if (params['year'])     this.selectedYear = +params['year'];
+          if (this.selectedBranchId) {
+            const match = this.myAssignments.find(x => x.branchId === this.selectedBranchId);
+            if (match) this.branchLabel = `${match.branchName} (${match.branchCode})`;
+          }
+          this.load();
+        });
+      });
     }
-    this.load();
+  }
+
+  goBack() {
+    this.router.navigate(['/app/my-assignments']);
   }
 
   ngAfterViewInit() {

@@ -29,7 +29,7 @@ export class SidebarComponent {
     { label: 'Users', icon: 'people', route: '/app/users', roles: ['Operator'] },
     { label: 'Branches', icon: 'business', route: '/app/branches', roles: ['Operator'] },
     { label: 'Assignments', icon: 'assignment_ind', route: '/app/assignments', roles: ['Operator'] },
-    { label: 'My Findings', icon: 'fact_check', route: '/app/findings', roles: ['ComplianceOfficer'] }
+    { label: 'My Assignments', icon: 'assignment', route: '/app/my-assignments', roles: ['ComplianceOfficer'] }
   ];
 
   visibleNavItems = computed(() => {

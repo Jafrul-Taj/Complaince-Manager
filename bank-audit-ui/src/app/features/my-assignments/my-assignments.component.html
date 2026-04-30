@@ -1,0 +1,75 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>My Assigned Branches</h1>
+    <span class="subtitle">Branches assigned to you for compliance</span>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">Loading your assignments...</div>
+  } @else if (assignments.length === 0) {
+    <div class="empty-state">
+      <mat-icon class="empty-icon">assignment_late</mat-icon>
+      <p>No branches have been assigned to you yet.</p>
+      <p class="empty-sub">Please contact your operator to get branch assignments.</p>
+    </div>
+  } @else {
+    <div class="cards-grid">
+      @for (a of assignments; track a.id) {
+        <mat-card class="assignment-card">
+          <mat-card-content>
+            <div class="card-top">
+              <div class="branch-info">
+                <span class="branch-code">{{ a.branchCode }}</span>
+                <h3 class="branch-name">{{ a.branchName }}</h3>
+                <span class="year-badge">{{ a.year }}</span>
+              </div>
+              <mat-icon class="branch-icon">business</mat-icon>
+            </div>
+
+            <!-- Finding stats -->
+            <div class="stats-row">
+              <div class="stat-item">
+                <span class="stat-num">{{ a.totalFindings }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="stat-item pending">
+                <span class="stat-num">{{ a.pendingFindings }}</span>
+                <span class="stat-label">Pending</span>
+              </div>
+              <div class="stat-item inprogress">
+                <span class="stat-num">{{ a.inProgressFindings }}</span>
+                <span class="stat-label">In Progress</span>
+              </div>
+              <div class="stat-item rectified">
+                <span class="stat-num">{{ a.rectifiedFindings }}</span>
+                <span class="stat-label">Rectified</span>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            @if (a.totalFindings > 0) {
+              <div class="progress-section">
+                <div class="progress-label">
+                  <span>Rectification Progress</span>
+                  <span>{{ rectifiedPercent(a) }}%</span>
+                </div>
+                <mat-progress-bar
+                  mode="determinate"
+                  [value]="rectifiedPercent(a)"
+                  [color]="rectifiedPercent(a) === 100 ? 'accent' : 'primary'">
+                </mat-progress-bar>
+              </div>
+            }
+          </mat-card-content>
+
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="openFindings(a)">
+              <mat-icon>fact_check</mat-icon>
+              {{ a.totalFindings === 0 ? 'Add Findings' : 'View Findings' }}
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

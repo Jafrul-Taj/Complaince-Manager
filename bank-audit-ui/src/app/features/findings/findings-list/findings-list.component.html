@@ -1,6 +1,16 @@
 <div class="page-container">
+  @if (selectedBranchId) {
+    <button mat-button (click)="goBack()" style="margin-bottom:12px">
+      <mat-icon>arrow_back</mat-icon> My Assignments
+    </button>
+  }
   <div class="page-header">
-    <h1>Audit Findings</h1>
+    <div>
+      <h1>Audit Findings</h1>
+      @if (branchLabel) {
+        <span class="branch-context">{{ branchLabel }} &mdash; {{ selectedYear }}</span>
+      }
+    </div>
     <button mat-raised-button color="primary" (click)="openForm()">
       <mat-icon>add</mat-icon> Add Finding
     </button>

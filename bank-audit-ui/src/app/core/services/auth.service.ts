@@ -52,7 +52,7 @@ export class AuthService {
   private redirectByRole(role: string) {
     switch (role) {
       case 'Operator':          this.router.navigate(['/app/users']); break;
-      case 'ComplianceOfficer': this.router.navigate(['/app/findings']); break;
+      case 'ComplianceOfficer': this.router.navigate(['/app/my-assignments']); break;
       case 'ComplianceHead':    this.router.navigate(['/app/dashboard']); break;
       default:                  this.router.navigate(['/app/dashboard']); break;
     }

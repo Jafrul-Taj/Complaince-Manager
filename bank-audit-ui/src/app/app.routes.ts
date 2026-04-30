@@ -41,6 +41,14 @@ export const routes: Routes = [
         data: { roles: ['Operator'] }
       },
       {
+        path: 'my-assignments',
+        title: 'My Assignments',
+        loadComponent: () =>
+          import('./features/my-assignments/my-assignments.component').then(m => m.MyAssignmentsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ComplianceOfficer'] }
+      },
+      {
         path: 'findings',
         title: 'My Findings',
         loadComponent: () =>
