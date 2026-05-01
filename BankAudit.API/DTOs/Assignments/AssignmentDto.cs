@@ -8,5 +8,4 @@ public class AssignmentDto
     public int BranchId { get; set; }
     public string BranchName { get; set; } = string.Empty;
     public string BranchCode { get; set; } = string.Empty;
-    public int Year { get; set; }
 }

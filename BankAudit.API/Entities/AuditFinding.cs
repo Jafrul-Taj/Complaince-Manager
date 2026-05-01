@@ -5,6 +5,7 @@ namespace BankAudit.API.Entities;
 public class AuditFinding
 {
     public int Id { get; set; }
+    public int? ComplianceAuditReportId { get; set; }
     public int BranchId { get; set; }
     public int AssignedOfficerId { get; set; }
     public string FindingArea { get; set; } = string.Empty;
@@ -19,6 +20,7 @@ public class AuditFinding
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public ComplianceAuditReport? ComplianceAuditReport { get; set; }
     public Branch Branch { get; set; } = null!;
     public User AssignedOfficer { get; set; } = null!;
 }

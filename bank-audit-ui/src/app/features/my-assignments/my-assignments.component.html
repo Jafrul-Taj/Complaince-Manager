@@ -1,75 +1,150 @@
-<div class="page-container">
-  <div class="page-header">
-    <h1>My Assigned Branches</h1>
-    <span class="subtitle">Branches assigned to you for compliance</span>
-  </div>
+<div class="dashboard-shell">
 
+  <!-- ── Loading ───────────────────────────────────────────── -->
   @if (loading) {
-    <div class="loading-state">Loading your assignments...</div>
-  } @else if (assignments.length === 0) {
-    <div class="empty-state">
-      <mat-icon class="empty-icon">assignment_late</mat-icon>
-      <p>No branches have been assigned to you yet.</p>
-      <p class="empty-sub">Please contact your operator to get branch assignments.</p>
+    <div class="loading-state">
+      <mat-spinner diameter="44"></mat-spinner>
+      <p>Loading your dashboard…</p>
     </div>
   } @else {
-    <div class="cards-grid">
-      @for (a of assignments; track a.id) {
-        <mat-card class="assignment-card">
-          <mat-card-content>
-            <div class="card-top">
-              <div class="branch-info">
-                <span class="branch-code">{{ a.branchCode }}</span>
-                <h3 class="branch-name">{{ a.branchName }}</h3>
-                <span class="year-badge">{{ a.year }}</span>
-              </div>
-              <mat-icon class="branch-icon">business</mat-icon>
-            </div>
 
-            <!-- Finding stats -->
-            <div class="stats-row">
-              <div class="stat-item">
-                <span class="stat-num">{{ a.totalFindings }}</span>
-                <span class="stat-label">Total</span>
-              </div>
-              <div class="stat-item pending">
-                <span class="stat-num">{{ a.pendingFindings }}</span>
-                <span class="stat-label">Pending</span>
-              </div>
-              <div class="stat-item inprogress">
-                <span class="stat-num">{{ a.inProgressFindings }}</span>
-                <span class="stat-label">In Progress</span>
-              </div>
-              <div class="stat-item rectified">
-                <span class="stat-num">{{ a.rectifiedFindings }}</span>
-                <span class="stat-label">Rectified</span>
-              </div>
-            </div>
+    <!-- ── Main two-column body ───────────────────────────── -->
+    <div class="main-body">
 
-            <!-- Progress bar -->
-            @if (a.totalFindings > 0) {
-              <div class="progress-section">
-                <div class="progress-label">
-                  <span>Rectification Progress</span>
-                  <span>{{ rectifiedPercent(a) }}%</span>
+      <!-- LEFT: Audit Reports (60-65 %) -->
+      <section class="col col-left">
+        <div class="col-header">
+          <span class="col-title">My Audit Reports</span>
+          <span class="col-badge">{{ totalReports }}</span>
+        </div>
+
+        @if (yearGroups.length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">📋</span>
+            <p>No audit reports yet.</p>
+            <p class="empty-hint">Select a branch on the right and create your first report.</p>
+          </div>
+        } @else {
+          <div class="year-scroll">
+            @for (group of yearGroups; track group.year) {
+
+              <!-- Year Separator -->
+              <div class="year-sep">
+                <span class="year-label">{{ group.year }}</span>
+                <span class="year-count">{{ group.reports.length }} report{{ group.reports.length !== 1 ? 's' : '' }}</span>
+              </div>
+
+              <!-- Report Cards for this year -->
+              <div class="cards-grid">
+                @for (r of group.reports; track r.id) {
+                  <div class="report-card">
+
+                    <!-- Top meta: year pill + branch code -->
+                    <div class="card-meta-row">
+                      <span class="card-year">{{ r.year }}</span>
+                      <span class="card-branch-code">{{ r.branchCode }}</span>
+                    </div>
+
+                    <!-- Branch name -->
+                    <div class="card-branch-name">{{ r.branchName }}</div>
+
+                    <!-- Team lead -->
+                    <div class="card-lead">{{ r.auditTeamLeadName }} &bull; {{ r.auditTeamLeadDesignation }}</div>
+
+                    <!-- Divider -->
+                    <div class="card-divider"></div>
+
+                    <!-- Stats -->
+                    <div class="card-stats">
+                      <div class="card-stat">
+                        <span class="stat-label">TOTAL</span>
+                        <span class="stat-value">{{ r.totalFindings }}</span>
+                      </div>
+                      <div class="card-stat">
+                        <span class="stat-label">PENDING</span>
+                        <span class="stat-value pending">{{ r.pendingFindings }}</span>
+                      </div>
+                      <div class="card-stat">
+                        <span class="stat-label">RECTIFIED</span>
+                        <span class="stat-value rectified">{{ r.rectifiedFindings }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Action -->
+                    <div class="card-action">
+                      <button class="findings-btn" (click)="openFindings(r)">
+                        {{ r.totalFindings === 0 ? 'Add Findings' : 'View Findings' }}
+                      </button>
+                    </div>
+
+                  </div>
+                }
+              </div>
+
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Vertical Divider -->
+      <div class="v-divider"></div>
+
+      <!-- RIGHT: Assigned Branches (35-40 %) -->
+      <section class="col col-right">
+        <div class="col-header">
+          <span class="col-title">Assigned Branches</span>
+          <span class="col-badge">{{ totalBranches }}</span>
+        </div>
+
+        @if (branches.length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">🏢</span>
+            <p>No branches assigned yet.</p>
+            <p class="empty-hint">Contact your operator to receive branch assignments.</p>
+          </div>
+        } @else {
+          <div class="branch-list">
+            @for (b of branches; track b.id) {
+              <div class="branch-item" (click)="openBranch(b)">
+                <div class="branch-item-left">
+                  <span class="branch-pill">{{ b.branchCode }}</span>
+                  <div class="branch-item-text">
+                    <span class="branch-item-name">{{ b.branchName }}</span>
+                    <span class="branch-item-sub">
+                      {{ b.totalReports }} report{{ b.totalReports !== 1 ? 's' : '' }}
+                    </span>
+                  </div>
                 </div>
-                <mat-progress-bar
-                  mode="determinate"
-                  [value]="rectifiedPercent(a)"
-                  [color]="rectifiedPercent(a) === 100 ? 'accent' : 'primary'">
-                </mat-progress-bar>
+                <span class="enter-link">
+                  {{ b.totalReports === 0 ? 'Create →' : 'View →' }}
+                </span>
               </div>
             }
-          </mat-card-content>
+          </div>
+        }
+      </section>
 
-          <mat-card-actions>
-            <button mat-raised-button color="primary" (click)="openFindings(a)">
-              <mat-icon>fact_check</mat-icon>
-              {{ a.totalFindings === 0 ? 'Add Findings' : 'View Findings' }}
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      }
     </div>
+
+    <!-- ── Bottom Statistics Bar ──────────────────────────── -->
+    <footer class="stats-bar">
+      <div class="stats-bar-inner">
+        <div class="stats-item">
+          <span class="stats-num">{{ totalReports }}</span>
+          <span class="stats-lbl">Total Reports</span>
+        </div>
+        <div class="stats-sep"></div>
+        <div class="stats-item">
+          <span class="stats-num">{{ totalBranches }}</span>
+          <span class="stats-lbl">Assigned Branches</span>
+        </div>
+        <div class="stats-sep"></div>
+        <div class="stats-item">
+          <span class="stats-num">{{ yearGroups.length }}</span>
+          <span class="stats-lbl">Audit Year{{ yearGroups.length !== 1 ? 's' : '' }}</span>
+        </div>
+      </div>
+    </footer>
+
   }
 </div>

@@ -5,7 +5,6 @@ export interface Assignment {
   branchId: number;
   branchName: string;
   branchCode: string;
-  year: number;
 }
 
 export interface AssignmentSummary {
@@ -13,15 +12,10 @@ export interface AssignmentSummary {
   branchId: number;
   branchName: string;
   branchCode: string;
-  year: number;
-  totalFindings: number;
-  pendingFindings: number;
-  inProgressFindings: number;
-  rectifiedFindings: number;
+  totalReports: number;
 }
 
 export interface AssignBranchRequest {
   userId: number;
   branchId: number;
-  year: number;
 }

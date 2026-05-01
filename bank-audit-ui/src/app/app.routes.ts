@@ -42,19 +42,27 @@ export const routes: Routes = [
       },
       {
         path: 'my-assignments',
-        title: 'My Assignments',
+        title: 'My Branches',
         loadComponent: () =>
           import('./features/my-assignments/my-assignments.component').then(m => m.MyAssignmentsComponent),
         canActivate: [roleGuard],
         data: { roles: ['ComplianceOfficer'] }
       },
       {
+        path: 'audit-reports',
+        title: 'Audit Reports',
+        loadComponent: () =>
+          import('./features/audit-reports/audit-reports.component').then(m => m.AuditReportsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ComplianceOfficer'] }
+      },
+      {
         path: 'findings',
-        title: 'My Findings',
+        title: 'Findings',
         loadComponent: () =>
           import('./features/findings/findings-list/findings-list.component').then(m => m.FindingsListComponent),
         canActivate: [roleGuard],
-        data: { roles: ['ComplianceOfficer'] }
+        data: { roles: ['ComplianceOfficer', 'ComplianceHead', 'Operator'] }
       },
       {
         path: 'dashboard',

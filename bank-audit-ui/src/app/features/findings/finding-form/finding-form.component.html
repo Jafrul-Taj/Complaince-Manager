@@ -4,26 +4,6 @@
   <form [formGroup]="form" class="finding-form">
     <div class="form-row">
       <mat-form-field appearance="outline">
-        <mat-label>Branch</mat-label>
-        <mat-select formControlName="branchId">
-          @for (a of assignments; track a.branchId) {
-            <mat-option [value]="a.branchId">{{ a.branchName }} ({{ a.branchCode }})</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Year</mat-label>
-        <mat-select formControlName="year">
-          @for (y of years; track y) {
-            <mat-option [value]="y">{{ y }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
-
-    <div class="form-row">
-      <mat-form-field appearance="outline">
         <mat-label>Sl. No</mat-label>
         <input matInput formControlName="slNo" placeholder="e.g. i., ii., v." />
       </mat-form-field>

@@ -1,45 +1,27 @@
 <div class="page-container">
-  @if (selectedBranchId) {
-    <button mat-button (click)="goBack()" style="margin-bottom:12px">
-      <mat-icon>arrow_back</mat-icon> My Assignments
-    </button>
-  }
   <div class="page-header">
-    <div>
-      <h1>Audit Findings</h1>
-      @if (branchLabel) {
-        <span class="branch-context">{{ branchLabel }} &mdash; {{ selectedYear }}</span>
-      }
+    <div class="header-left">
+      <button mat-icon-button (click)="goBack()" title="Back">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        <h1>Audit Findings</h1>
+        @if (reportId) {
+          <span class="branch-context">Report #{{ reportId }}</span>
+        }
+      </div>
     </div>
-    <button mat-raised-button color="primary" (click)="openForm()">
-      <mat-icon>add</mat-icon> Add Finding
-    </button>
+    @if (reportId) {
+      <button mat-raised-button color="primary" (click)="openForm()">
+        <mat-icon>add</mat-icon> Add Finding
+      </button>
+    }
   </div>
 
   <!-- Filters -->
   <mat-card style="margin-bottom:16px">
     <mat-card-content style="padding:16px">
       <div class="filters-row">
-        <mat-form-field appearance="outline">
-          <mat-label>Year</mat-label>
-          <mat-select [(value)]="selectedYear" (selectionChange)="load()">
-            <mat-option [value]="null">All Years</mat-option>
-            @for (y of years; track y) {
-              <mat-option [value]="y">{{ y }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Branch</mat-label>
-          <mat-select [(value)]="selectedBranchId" (selectionChange)="load()">
-            <mat-option [value]="null">All Branches</mat-option>
-            @for (a of myAssignments; track a.branchId) {
-              <mat-option [value]="a.branchId">{{ a.branchName }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
         <mat-form-field appearance="outline">
           <mat-label>Risk Rating</mat-label>
           <mat-select [(value)]="riskFilter" (selectionChange)="applyLocalFilter()">

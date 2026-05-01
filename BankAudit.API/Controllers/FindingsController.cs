@@ -20,10 +20,10 @@ public class FindingsController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "ComplianceOfficer,ComplianceHead,Operator")]
-    public async Task<IActionResult> GetAll([FromQuery] int? year, [FromQuery] int? branchId)
+    public async Task<IActionResult> GetAll([FromQuery] int? year, [FromQuery] int? branchId, [FromQuery] int? reportId)
     {
         var isOfficer = User.IsInRole("ComplianceOfficer");
-        return Ok(await _service.GetAllAsync(CurrentUserId, isOfficer, year, branchId));
+        return Ok(await _service.GetAllAsync(CurrentUserId, isOfficer, year, branchId, reportId));
     }
 
     [HttpGet("{id}")]

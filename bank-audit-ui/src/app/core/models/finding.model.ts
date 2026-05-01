@@ -3,6 +3,7 @@ export type RectificationStatus = 'Pending' | 'InProgress' | 'Rectified';
 
 export interface AuditFinding {
   id: number;
+  complianceAuditReportId?: number;
   branchId: number;
   branchName: string;
   branchCode: string;
@@ -22,16 +23,21 @@ export interface AuditFinding {
 }
 
 export interface CreateFindingRequest {
-  branchId: number;
+  complianceAuditReportId: number;
   findingArea: string;
   slNo: string;
   findingDetails: string;
   riskRating: RiskRating;
   noOfInstances: string;
-  year: number;
 }
 
-export interface UpdateFindingRequest extends CreateFindingRequest {}
+export interface UpdateFindingRequest {
+  findingArea: string;
+  slNo: string;
+  findingDetails: string;
+  riskRating: RiskRating;
+  noOfInstances: string;
+}
 
 export interface RectifyFindingRequest {
   rectificationStatus: RectificationStatus;

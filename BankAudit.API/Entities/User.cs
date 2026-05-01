@@ -15,4 +15,5 @@ public class User
 
     public ICollection<UserBranchAssignment> Assignments { get; set; } = new List<UserBranchAssignment>();
     public ICollection<AuditFinding> Findings { get; set; } = new List<AuditFinding>();
+    public ICollection<ComplianceAuditReport> ComplianceAuditReports { get; set; } = new List<ComplianceAuditReport>();
 }

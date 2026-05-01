@@ -13,12 +13,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { FindingService } from '../../../core/services/finding.service';
-import { AssignmentService } from '../../../core/services/assignment.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { AuditFinding } from '../../../core/models/finding.model';
-import { Assignment } from '../../../core/models/assignment.model';
 import { FindingFormComponent } from '../finding-form/finding-form.component';
 import { RectifyModalComponent } from '../rectify-modal/rectify-modal.component';
 
@@ -38,24 +35,21 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   columns = ['slNo', 'branchName', 'findingArea', 'findingDetails', 'riskRating', 'rectificationStatus', 'year', 'actions'];
   dataSource = new MatTableDataSource<AuditFinding>([]);
   allFindings: AuditFinding[] = [];
-  myAssignments: Assignment[] = [];
 
-  selectedYear: number | null = new Date().getFullYear();
-  selectedBranchId: number | null = null;
+  reportId: number | null = null;
+  branchId: number | null = null;
+  selectedYear: number | null = null;
   riskFilter = '';
   statusFilter = '';
 
-  years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  reportLabel = '';
+  branchLabel = '';
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  branchLabel = '';
-
   constructor(
     private findingSvc: FindingService,
-    private assignSvc: AssignmentService,
-    private auth: AuthService,
     private dialog: MatDialog,
     private snack: MatSnackBar,
     private route: ActivatedRoute,
@@ -63,26 +57,12 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
-    const uid = this.auth.userId();
-    if (uid) {
-      this.assignSvc.getByUser(uid).subscribe(a => {
-        this.myAssignments = a;
-        // read query params for pre-filtering from My Assignments page
-        this.route.queryParams.subscribe(params => {
-          if (params['branchId']) this.selectedBranchId = +params['branchId'];
-          if (params['year'])     this.selectedYear = +params['year'];
-          if (this.selectedBranchId) {
-            const match = this.myAssignments.find(x => x.branchId === this.selectedBranchId);
-            if (match) this.branchLabel = `${match.branchName} (${match.branchCode})`;
-          }
-          this.load();
-        });
-      });
-    }
-  }
-
-  goBack() {
-    this.router.navigate(['/app/my-assignments']);
+    this.route.queryParams.subscribe(params => {
+      this.reportId = params['reportId'] ? +params['reportId'] : null;
+      this.branchId = params['branchId'] ? +params['branchId'] : null;
+      this.selectedYear = params['year'] ? +params['year'] : null;
+      this.load();
+    });
   }
 
   ngAfterViewInit() {
@@ -93,11 +73,22 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   load() {
     this.findingSvc.getAll(
       this.selectedYear ?? undefined,
-      this.selectedBranchId ?? undefined
+      this.branchId ?? undefined,
+      this.reportId ?? undefined
     ).subscribe(findings => {
       this.allFindings = findings;
       this.applyLocalFilter();
     });
+  }
+
+  goBack() {
+    if (this.reportId !== null) {
+      const params: any = {};
+      if (this.branchId) params['branchId'] = this.branchId;
+      this.router.navigate(['/app/audit-reports'], { queryParams: params });
+    } else {
+      this.router.navigate(['/app/my-assignments']);
+    }
   }
 
   applyLocalFilter() {
@@ -110,7 +101,7 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   openForm(finding?: AuditFinding) {
     const ref = this.dialog.open(FindingFormComponent, {
       width: '620px',
-      data: { finding, assignments: this.myAssignments }
+      data: { finding, reportId: finding?.complianceAuditReportId ?? this.reportId }
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }

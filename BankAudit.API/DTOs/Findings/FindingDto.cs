@@ -3,6 +3,7 @@ namespace BankAudit.API.DTOs.Findings;
 public class FindingDto
 {
     public int Id { get; set; }
+    public int? ComplianceAuditReportId { get; set; }
     public int BranchId { get; set; }
     public string BranchName { get; set; } = string.Empty;
     public string BranchCode { get; set; } = string.Empty;

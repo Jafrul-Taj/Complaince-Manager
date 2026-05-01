@@ -42,6 +42,7 @@ builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<IFindingService, FindingService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IComplianceAuditReportService, ComplianceAuditReportService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(o =>

@@ -1,0 +1,136 @@
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <button mat-icon-button (click)="goBack()" class="back-btn" title="Back to My Branches">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        @if (branch) {
+          <span class="branch-code">{{ branch.branchCode }}</span>
+          <h1>{{ branch.branchName }}</h1>
+          <span class="subtitle">Compliance Audit Reports</span>
+        } @else {
+          <h1>Compliance Audit Reports</h1>
+        }
+      </div>
+    </div>
+
+    <button mat-raised-button color="primary" (click)="toggleCreateForm()">
+      <mat-icon>{{ showCreateForm ? 'close' : 'add' }}</mat-icon>
+      {{ showCreateForm ? 'Cancel' : 'New Report' }}
+    </button>
+  </div>
+
+  <!-- Create Report Form -->
+  @if (showCreateForm) {
+    <mat-card class="create-form-card">
+      <mat-card-title>Create New Compliance Audit Report</mat-card-title>
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="createReport()" class="create-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Audit Year</mat-label>
+            <mat-select formControlName="year">
+              @for (y of years; track y) {
+                <mat-option [value]="y">{{ y }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Audit Team Lead (ICCD Employee)</mat-label>
+            <mat-select formControlName="auditTeamLeadId">
+              @for (e of employees; track e.id) {
+                <mat-option [value]="e.id">{{ e.name }} — {{ e.designation }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || saving">
+            <mat-icon>save</mat-icon>
+            {{ saving ? 'Creating...' : 'Create Report' }}
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Reports List -->
+  @if (loading) {
+    <div class="loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading reports...</p>
+    </div>
+  } @else if (!branchId) {
+    <div class="empty-state">
+      <mat-icon class="empty-icon">warning</mat-icon>
+      <p>No branch selected. Please go back and select a branch.</p>
+      <button mat-raised-button color="primary" (click)="goBack()">Go Back</button>
+    </div>
+  } @else if (reports.length === 0) {
+    <div class="empty-state">
+      <mat-icon class="empty-icon">description</mat-icon>
+      <p>No compliance audit reports for this branch yet.</p>
+      <p class="empty-sub">Click "New Report" to create the first one.</p>
+    </div>
+  } @else {
+    <div class="reports-grid">
+      @for (r of reports; track r.id) {
+        <mat-card class="report-card">
+          <mat-card-content>
+            <div class="report-header">
+              <div class="year-badge">{{ r.year }}</div>
+              <button mat-icon-button color="warn" (click)="deleteReport(r)" title="Delete Report" class="delete-btn">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+
+            <div class="lead-info">
+              <mat-icon class="lead-icon">person</mat-icon>
+              <div>
+                <div class="lead-name">{{ r.auditTeamLeadName }}</div>
+                <div class="lead-title">{{ r.auditTeamLeadDesignation }}</div>
+              </div>
+            </div>
+
+            <mat-divider style="margin: 12px 0"></mat-divider>
+
+            <div class="findings-summary">
+              <div class="stat">
+                <span class="stat-num">{{ r.totalFindings }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="stat pending">
+                <span class="stat-num">{{ r.pendingFindings }}</span>
+                <span class="stat-label">Pending</span>
+              </div>
+              <div class="stat rectified">
+                <span class="stat-num">{{ r.rectifiedFindings }}</span>
+                <span class="stat-label">Rectified</span>
+              </div>
+            </div>
+
+            @if (r.totalFindings > 0) {
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill"
+                       [style.width.%]="rectifiedPercent(r)"
+                       [class.complete]="rectifiedPercent(r) === 100">
+                  </div>
+                </div>
+                <span class="progress-pct">{{ rectifiedPercent(r) }}%</span>
+              </div>
+            }
+          </mat-card-content>
+
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="openFindings(r)">
+              <mat-icon>fact_check</mat-icon>
+              {{ r.totalFindings === 0 ? 'Add Findings' : 'View Findings' }}
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

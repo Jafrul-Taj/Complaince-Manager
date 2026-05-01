@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<UserBranchAssignment> UserBranchAssignments => Set<UserBranchAssignment>();
     public DbSet<AuditFinding> AuditFindings => Set<AuditFinding>();
     public DbSet<ICCDEmployee> ICCDEmployees => Set<ICCDEmployee>();
+    public DbSet<ComplianceAuditReport> ComplianceAuditReports => Set<ComplianceAuditReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,7 +31,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<UserBranchAssignment>(e =>
         {
-            e.HasIndex(a => new { a.UserId, a.BranchId, a.Year }).IsUnique();
+            e.HasIndex(a => new { a.UserId, a.BranchId }).IsUnique();
             e.HasOne(a => a.User)
              .WithMany(u => u.Assignments)
              .HasForeignKey(a => a.UserId)
@@ -41,10 +42,31 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<ComplianceAuditReport>(e =>
+        {
+            e.HasIndex(r => new { r.BranchId, r.Year }).IsUnique();
+            e.HasOne(r => r.User)
+             .WithMany(u => u.ComplianceAuditReports)
+             .HasForeignKey(r => r.UserId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(r => r.Branch)
+             .WithMany(b => b.ComplianceAuditReports)
+             .HasForeignKey(r => r.BranchId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(r => r.AuditTeamLead)
+             .WithMany()
+             .HasForeignKey(r => r.AuditTeamLeadId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<AuditFinding>(e =>
         {
             e.Property(f => f.RiskRating).HasConversion<string>();
             e.Property(f => f.RectificationStatus).HasConversion<string>();
+            e.HasOne(f => f.ComplianceAuditReport)
+             .WithMany(r => r.Findings)
+             .HasForeignKey(f => f.ComplianceAuditReportId)
+             .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(f => f.Branch)
              .WithMany(b => b.Findings)
              .HasForeignKey(f => f.BranchId)

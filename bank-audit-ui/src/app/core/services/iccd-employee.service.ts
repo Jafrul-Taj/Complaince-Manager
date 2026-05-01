@@ -12,6 +12,10 @@ export class IccdEmployeeService {
 
   constructor(private http: HttpClient) {}
 
+  getAll(): Observable<IccdEmployee[]> {
+    return this.http.get<IccdEmployee[]>(this.API).pipe(catchError(() => of([])));
+  }
+
   getComplianceEmployees(): Observable<IccdEmployee[]> {
     if (this.complianceCache) return of(this.complianceCache);
     return this.http.get<IccdEmployee[]>(`${this.API}?unit=Compliance`).pipe(

@@ -12,7 +12,7 @@ public class FindingService : IFindingService
 
     public FindingService(AppDbContext db) => _db = db;
 
-    public async Task<List<FindingDto>> GetAllAsync(int currentUserId, bool isOfficer, int? year, int? branchId)
+    public async Task<List<FindingDto>> GetAllAsync(int currentUserId, bool isOfficer, int? year, int? branchId, int? reportId)
     {
         var query = _db.AuditFindings
             .Include(f => f.Branch)
@@ -21,6 +21,9 @@ public class FindingService : IFindingService
 
         if (isOfficer)
             query = query.Where(f => f.AssignedOfficerId == currentUserId);
+
+        if (reportId.HasValue)
+            query = query.Where(f => f.ComplianceAuditReportId == reportId.Value);
 
         if (year.HasValue)
             query = query.Where(f => f.Year == year.Value);
@@ -45,16 +48,20 @@ public class FindingService : IFindingService
 
     public async Task<FindingDto> CreateAsync(CreateFindingRequest request, int officerId)
     {
+        var report = await _db.ComplianceAuditReports.FindAsync(request.ComplianceAuditReportId)
+            ?? throw new InvalidOperationException("Compliance audit report not found.");
+
         var finding = new AuditFinding
         {
-            BranchId = request.BranchId,
+            ComplianceAuditReportId = report.Id,
+            BranchId = report.BranchId,
+            Year = report.Year,
             AssignedOfficerId = officerId,
             FindingArea = request.FindingArea,
             SlNo = request.SlNo,
             FindingDetails = request.FindingDetails,
             RiskRating = request.RiskRating,
             NoOfInstances = request.NoOfInstances,
-            Year = request.Year,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -75,17 +82,14 @@ public class FindingService : IFindingService
             .FirstOrDefaultAsync(f => f.Id == id && f.AssignedOfficerId == officerId);
         if (finding is null) return null;
 
-        finding.BranchId = request.BranchId;
         finding.FindingArea = request.FindingArea;
         finding.SlNo = request.SlNo;
         finding.FindingDetails = request.FindingDetails;
         finding.RiskRating = request.RiskRating;
         finding.NoOfInstances = request.NoOfInstances;
-        finding.Year = request.Year;
         finding.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        await _db.Entry(finding).Reference(f => f.Branch).LoadAsync();
         return ToDto(finding);
     }
 
@@ -120,6 +124,7 @@ public class FindingService : IFindingService
     private static FindingDto ToDto(AuditFinding f) => new()
     {
         Id = f.Id,
+        ComplianceAuditReportId = f.ComplianceAuditReportId,
         BranchId = f.BranchId,
         BranchName = f.Branch?.BranchName ?? string.Empty,
         BranchCode = f.Branch?.BranchCode ?? string.Empty,

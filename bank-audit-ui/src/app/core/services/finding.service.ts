@@ -9,10 +9,11 @@ export class FindingService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(year?: number, branchId?: number) {
+  getAll(year?: number, branchId?: number, reportId?: number) {
     let params = new HttpParams();
     if (year) params = params.set('year', year);
     if (branchId) params = params.set('branchId', branchId);
+    if (reportId) params = params.set('reportId', reportId);
     return this.http.get<AuditFinding[]>(this.API, { params });
   }
 

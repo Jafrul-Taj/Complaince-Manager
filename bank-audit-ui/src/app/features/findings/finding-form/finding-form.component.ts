@@ -9,7 +9,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FindingService } from '../../../core/services/finding.service';
 import { AuditFinding } from '../../../core/models/finding.model';
-import { Assignment } from '../../../core/models/assignment.model';
 
 @Component({
   selector: 'app-finding-form',
@@ -25,12 +24,8 @@ import { Assignment } from '../../../core/models/assignment.model';
 export class FindingFormComponent implements OnInit {
   isEdit: boolean;
   saving = false;
-  assignments: Assignment[] = [];
-  years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   form = this.fb.group({
-    branchId: [null as number | null, Validators.required],
-    year: [new Date().getFullYear(), Validators.required],
     slNo: ['', Validators.required],
     findingArea: ['', Validators.required],
     findingDetails: ['', Validators.required],
@@ -43,18 +38,15 @@ export class FindingFormComponent implements OnInit {
     private findingSvc: FindingService,
     private snack: MatSnackBar,
     private dialogRef: MatDialogRef<FindingFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { finding?: AuditFinding; assignments: Assignment[] }
+    @Inject(MAT_DIALOG_DATA) public data: { finding?: AuditFinding; reportId?: number }
   ) {
     this.isEdit = !!data.finding;
-    this.assignments = data.assignments;
   }
 
   ngOnInit() {
     if (this.isEdit) {
       const f = this.data.finding!;
       this.form.patchValue({
-        branchId: f.branchId,
-        year: f.year,
         slNo: f.slNo,
         findingArea: f.findingArea,
         findingDetails: f.findingDetails,
@@ -68,19 +60,23 @@ export class FindingFormComponent implements OnInit {
     if (this.form.invalid) return;
     this.saving = true;
     const v = this.form.value;
-    const payload: any = {
-      branchId: v.branchId!,
-      year: v.year!,
-      slNo: v.slNo!,
-      findingArea: v.findingArea!,
-      findingDetails: v.findingDetails!,
-      riskRating: v.riskRating!,
-      noOfInstances: v.noOfInstances || ''
-    };
 
     const obs = this.isEdit
-      ? this.findingSvc.update(this.data.finding!.id, payload)
-      : this.findingSvc.create(payload);
+      ? this.findingSvc.update(this.data.finding!.id, {
+          slNo: v.slNo!,
+          findingArea: v.findingArea!,
+          findingDetails: v.findingDetails!,
+          riskRating: v.riskRating as any,
+          noOfInstances: v.noOfInstances || ''
+        })
+      : this.findingSvc.create({
+          complianceAuditReportId: this.data.reportId!,
+          slNo: v.slNo!,
+          findingArea: v.findingArea!,
+          findingDetails: v.findingDetails!,
+          riskRating: v.riskRating as any,
+          noOfInstances: v.noOfInstances || ''
+        });
 
     obs.subscribe({
       next: () => { this.snack.open('Finding saved', 'OK', { duration: 3000 }); this.dialogRef.close(true); },
