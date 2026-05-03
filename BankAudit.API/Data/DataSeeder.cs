@@ -1,5 +1,6 @@
 using BankAudit.API.Entities;
 using BankAudit.API.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankAudit.API.Data;
 
@@ -7,7 +8,7 @@ public static class DataSeeder
 {
     public static async Task SeedAsync(AppDbContext context)
     {
-        await context.Database.EnsureCreatedAsync();
+        await EnsureSchemaAsync(context);
 
         if (!context.Users.Any(u => u.Role == UserRole.Operator))
         {
@@ -342,6 +343,51 @@ public static class DataSeeder
 
             context.ICCDEmployees.AddRange(employees);
             await context.SaveChangesAsync();
+        }
+    }
+
+    private static async Task EnsureSchemaAsync(AppDbContext context)
+    {
+        var canConnect = await context.Database.CanConnectAsync();
+        if (canConnect)
+        {
+            // Check if this DB was bootstrapped without migrations (no history table)
+            var historyExists = await HasMigrationHistoryTableAsync(context);
+            if (!historyExists)
+            {
+                // Create history table and mark all prior migrations as applied so
+                // MigrateAsync only runs the new AddFindingNewFields migration.
+                await context.Database.ExecuteSqlRawAsync(@"
+                    CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                        ""MigrationId"" TEXT NOT NULL CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY,
+                        ""ProductVersion"" TEXT NOT NULL
+                    )");
+                string[] prior =
+                [
+                    "20260422092636_InitialCreate",
+                    "20260426104742_AddICCDEmployees",
+                    "20260427120000_RebuildICCDEmployee_GuidPK",
+                    "20260501125624_AddComplianceAuditReport",
+                ];
+                foreach (var m in prior)
+                    await context.Database.ExecuteSqlRawAsync(
+                        $"INSERT OR IGNORE INTO \"__EFMigrationsHistory\" VALUES ('{m}', '8.0.0')");
+            }
+        }
+        await context.Database.MigrateAsync();
+    }
+
+    private static async Task<bool> HasMigrationHistoryTableAsync(AppDbContext context)
+    {
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync(
+                "SELECT 1 FROM \"__EFMigrationsHistory\" LIMIT 1");
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

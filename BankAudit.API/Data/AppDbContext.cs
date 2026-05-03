@@ -62,7 +62,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AuditFinding>(e =>
         {
             e.Property(f => f.RiskRating).HasConversion<string>();
-            e.Property(f => f.RectificationStatus).HasConversion<string>();
             e.HasOne(f => f.ComplianceAuditReport)
              .WithMany(r => r.Findings)
              .HasForeignKey(f => f.ComplianceAuditReportId)

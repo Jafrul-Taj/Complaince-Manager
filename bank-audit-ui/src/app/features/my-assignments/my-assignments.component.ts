@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ComplianceAuditReportService } from '../../core/services/compliance-audit-report.service';
 import { AssignmentService } from '../../core/services/assignment.service';
 import { ComplianceAuditReport } from '../../core/models/compliance-audit-report.model';
@@ -18,7 +19,7 @@ interface YearGroup {
 @Component({
   selector: 'app-my-assignments',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatTooltipModule],
   templateUrl: './my-assignments.component.html',
   styleUrl: './my-assignments.component.css'
 })

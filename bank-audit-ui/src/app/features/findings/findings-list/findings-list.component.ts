@@ -32,7 +32,7 @@ import { RectifyModalComponent } from '../rectify-modal/rectify-modal.component'
   styleUrl: './findings-list.component.css'
 })
 export class FindingsListComponent implements OnInit, AfterViewInit {
-  columns = ['slNo', 'branchName', 'findingArea', 'findingDetails', 'riskRating', 'rectificationStatus', 'year', 'actions'];
+  columns = ['slNo', 'branchName', 'findingArea', 'findingDetails', 'riskRating', 'complianceStatus', 'year', 'actions'];
   dataSource = new MatTableDataSource<AuditFinding>([]);
   allFindings: AuditFinding[] = [];
 
@@ -94,7 +94,7 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   applyLocalFilter() {
     let filtered = this.allFindings;
     if (this.riskFilter) filtered = filtered.filter(f => f.riskRating === this.riskFilter);
-    if (this.statusFilter) filtered = filtered.filter(f => f.rectificationStatus === this.statusFilter);
+    if (this.statusFilter) filtered = filtered.filter(f => f.complianceStatus === this.statusFilter);
     this.dataSource.data = filtered;
   }
 
@@ -123,15 +123,10 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   }
 
   statusClass(s: string) {
-    switch (s) {
-      case 'Pending':    return 'chip-pending';
-      case 'InProgress': return 'chip-inprogress';
-      case 'Rectified':  return 'chip-rectified';
-      default: return '';
-    }
+    return s === 'Rectified' ? 'chip-rectified' : 'chip-pending';
   }
 
   formatStatus(s: string) {
-    return s === 'InProgress' ? 'In Progress' : s;
+    return s;
   }
 }

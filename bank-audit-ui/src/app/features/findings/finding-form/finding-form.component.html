@@ -2,39 +2,114 @@
 
 <mat-dialog-content>
   <form [formGroup]="form" class="finding-form">
+
+    <!-- Row 1: SL No + Name of Customers -->
     <div class="form-row">
-      <mat-form-field appearance="outline">
-        <mat-label>Sl. No</mat-label>
+      <mat-form-field appearance="outline" class="field-sln">
+        <mat-label>SL No</mat-label>
         <input matInput formControlName="slNo" placeholder="e.g. i., ii., v." />
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Finding Area</mat-label>
-        <input matInput formControlName="findingArea" />
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Name of Customers</mat-label>
+        <input matInput formControlName="nameOfCustomers" placeholder="Customer name(s)" />
       </mat-form-field>
     </div>
 
+    <!-- Details of Irregularities -->
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Finding Details</mat-label>
-      <textarea matInput formControlName="findingDetails" rows="4"></textarea>
+      <mat-label>Details of Irregularities</mat-label>
+      <textarea matInput formControlName="findingDetails" rows="3" placeholder="Describe the irregularity in detail"></textarea>
     </mat-form-field>
 
+    <!-- Row 2: Lapses Originated + No of Customer/Instance -->
     <div class="form-row">
-      <mat-form-field appearance="outline">
-        <mat-label>Risk Rating</mat-label>
-        <mat-select formControlName="riskRating">
-          <mat-option value="Low">Low</mat-option>
-          <mat-option value="Medium">Medium</mat-option>
-          <mat-option value="High">High</mat-option>
-          <mat-option value="Critical">Critical</mat-option>
-        </mat-select>
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Lapses Originated</mat-label>
+        <input matInput formControlName="lapsesOriginated" placeholder="Origin of lapses" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>No. of Instances</mat-label>
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>No of Customer/Instance (AML/LIABILITY)</mat-label>
         <input matInput formControlName="noOfInstances" placeholder="e.g. 3, NI ACT Case was filed" />
       </mat-form-field>
     </div>
+
+    <!-- Category (full width, searchable) -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="category" (openedChange)="onCategoryPanelOpen($event)">
+        <mat-option disabled class="search-option">
+          <div class="category-search-wrapper" (click)="$event.stopPropagation()">
+            <input
+              #categorySearchInput
+              class="category-search-input"
+              placeholder="Search categories..."
+              (input)="filterCategories($event)"
+              (keydown)="$event.stopPropagation()"
+            />
+          </div>
+        </mat-option>
+        <mat-option *ngFor="let cat of filteredCategories" [value]="cat" [title]="cat">
+          {{ cat }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Selected category display -->
+    <mat-form-field *ngIf="selectedCategory" appearance="outline" class="full-width selected-category-field">
+      <mat-label>Selected Category</mat-label>
+      <textarea matInput [value]="selectedCategory" readonly rows="2"></textarea>
+    </mat-form-field>
+
+    <!-- Row 3: Area + Audit Base Date -->
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Area</mat-label>
+        <mat-select formControlName="findingArea">
+          <mat-option value="AML">AML</mat-option>
+          <mat-option value="Credit">Credit</mat-option>
+          <mat-option value="GB">GB</mat-option>
+          <mat-option value="TFO">TFO</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Audit Base Date</mat-label>
+        <input matInput [matDatepicker]="auditDatePicker" formControlName="auditBaseDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="auditDatePicker"></mat-datepicker-toggle>
+        <mat-datepicker #auditDatePicker></mat-datepicker>
+      </mat-form-field>
+    </div>
+
+    <!-- Row 4: Risk Rating + Compliance Status + Lapes Type -->
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Risk Rating</mat-label>
+        <mat-select formControlName="riskRating">
+          <mat-option value="High">High</mat-option>
+          <mat-option value="Medium">Medium</mat-option>
+          <mat-option value="Low">Low</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Compliance Status</mat-label>
+        <mat-select formControlName="complianceStatus">
+          <mat-option value="Rectified">Rectified</mat-option>
+          <mat-option value="Unrectified">Unrectified</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="field-grow">
+        <mat-label>Lapes Type</mat-label>
+        <mat-select formControlName="lapsesType">
+          <mat-option value="Operational">Operational</mat-option>
+          <mat-option value="Documentation">Documentation</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
   </form>
 </mat-dialog-content>
 

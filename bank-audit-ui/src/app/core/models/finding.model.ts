@@ -1,5 +1,4 @@
 export type RiskRating = 'Low' | 'Medium' | 'High' | 'Critical';
-export type RectificationStatus = 'Pending' | 'InProgress' | 'Rectified';
 
 export interface AuditFinding {
   id: number;
@@ -11,10 +10,15 @@ export interface AuditFinding {
   officerName: string;
   findingArea: string;
   slNo: string;
+  nameOfCustomers: string;
   findingDetails: string;
+  lapsesOriginated: string;
+  category: string;
   riskRating: RiskRating;
+  complianceStatus: string;
+  lapsesType: string;
   noOfInstances: string;
-  rectificationStatus: RectificationStatus;
+  auditBaseDate?: string;
   rectificationRemarks?: string;
   rectifiedAt?: string;
   year: number;
@@ -26,20 +30,32 @@ export interface CreateFindingRequest {
   complianceAuditReportId: number;
   findingArea: string;
   slNo: string;
+  nameOfCustomers: string;
   findingDetails: string;
+  lapsesOriginated: string;
+  category: string;
   riskRating: RiskRating;
+  complianceStatus: string;
+  lapsesType: string;
   noOfInstances: string;
+  auditBaseDate?: string | null;
 }
 
 export interface UpdateFindingRequest {
   findingArea: string;
   slNo: string;
+  nameOfCustomers: string;
   findingDetails: string;
+  lapsesOriginated: string;
+  category: string;
   riskRating: RiskRating;
+  complianceStatus: string;
+  lapsesType: string;
   noOfInstances: string;
+  auditBaseDate?: string | null;
 }
 
 export interface RectifyFindingRequest {
-  rectificationStatus: RectificationStatus;
+  complianceStatus: string;
   rectificationRemarks: string;
 }

@@ -1,5 +1,5 @@
 .finding-form {
-  min-width: 560px;
+  min-width: 700px;
   padding-top: 8px;
 }
 
@@ -16,6 +16,56 @@
   width: 100%;
 }
 
+.field-grow {
+  flex: 1;
+}
+
+.field-sln {
+  flex: 0 0 120px;
+}
+
 mat-form-field {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+/* Search input inside category dropdown */
+.search-option {
+  height: auto !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+
+.category-search-wrapper {
+  padding: 8px 12px;
+  pointer-events: all;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.category-search-input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.category-search-input:focus {
+  border-color: #1976d2;
+}
+
+/* Ensure category panel is wide enough */
+::ng-deep .mat-mdc-select-panel {
+  max-height: 320px;
+}
+
+.selected-category-field textarea {
+  resize: none;
+  color: #555;
+  font-size: 13px;
 }

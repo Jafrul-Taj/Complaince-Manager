@@ -159,7 +159,7 @@ export class DashboardComponent implements OnInit {
       'Finding Details': f.findingDetails,
       'Risk Rating': f.riskRating,
       'No. of Instances': f.noOfInstances,
-      'Rectification Status': f.rectificationStatus === 'InProgress' ? 'In Progress' : f.rectificationStatus,
+      'Compliance Status': f.complianceStatus,
       'Rectification Remarks': f.rectificationRemarks ?? '',
       'Rectified At': f.rectifiedAt ? new Date(f.rectifiedAt).toLocaleDateString() : '',
       'Assigned Officer': f.officerName,

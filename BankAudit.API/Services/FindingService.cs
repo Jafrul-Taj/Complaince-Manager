@@ -59,9 +59,15 @@ public class FindingService : IFindingService
             AssignedOfficerId = officerId,
             FindingArea = request.FindingArea,
             SlNo = request.SlNo,
+            NameOfCustomers = request.NameOfCustomers,
             FindingDetails = request.FindingDetails,
+            LapsesOriginated = request.LapsesOriginated,
+            Category = request.Category,
             RiskRating = request.RiskRating,
+            ComplianceStatus = request.ComplianceStatus,
+            LapsesType = request.LapsesType,
             NoOfInstances = request.NoOfInstances,
+            AuditBaseDate = request.AuditBaseDate,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -84,9 +90,15 @@ public class FindingService : IFindingService
 
         finding.FindingArea = request.FindingArea;
         finding.SlNo = request.SlNo;
+        finding.NameOfCustomers = request.NameOfCustomers;
         finding.FindingDetails = request.FindingDetails;
+        finding.LapsesOriginated = request.LapsesOriginated;
+        finding.Category = request.Category;
         finding.RiskRating = request.RiskRating;
+        finding.ComplianceStatus = request.ComplianceStatus;
+        finding.LapsesType = request.LapsesType;
         finding.NoOfInstances = request.NoOfInstances;
+        finding.AuditBaseDate = request.AuditBaseDate;
         finding.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -101,11 +113,11 @@ public class FindingService : IFindingService
             .FirstOrDefaultAsync(f => f.Id == id && f.AssignedOfficerId == officerId);
         if (finding is null) return null;
 
-        finding.RectificationStatus = request.RectificationStatus;
+        finding.ComplianceStatus = request.ComplianceStatus;
         finding.RectificationRemarks = request.RectificationRemarks;
         finding.UpdatedAt = DateTime.UtcNow;
 
-        if (request.RectificationStatus == Enums.RectificationStatus.Rectified)
+        if (request.ComplianceStatus == "Rectified")
             finding.RectifiedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -132,10 +144,15 @@ public class FindingService : IFindingService
         OfficerName = f.AssignedOfficer?.FullName ?? string.Empty,
         FindingArea = f.FindingArea,
         SlNo = f.SlNo,
+        NameOfCustomers = f.NameOfCustomers,
         FindingDetails = f.FindingDetails,
+        LapsesOriginated = f.LapsesOriginated,
+        Category = f.Category,
         RiskRating = f.RiskRating.ToString(),
+        ComplianceStatus = f.ComplianceStatus,
+        LapsesType = f.LapsesType,
         NoOfInstances = f.NoOfInstances,
-        RectificationStatus = f.RectificationStatus.ToString(),
+        AuditBaseDate = f.AuditBaseDate,
         RectificationRemarks = f.RectificationRemarks,
         RectifiedAt = f.RectifiedAt,
         Year = f.Year,

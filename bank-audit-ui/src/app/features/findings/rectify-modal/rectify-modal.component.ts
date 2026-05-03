@@ -27,7 +27,7 @@ export class RectifyModalComponent {
   saving = false;
 
   form = this.fb.group({
-    rectificationStatus: ['Rectified', Validators.required],
+    complianceStatus: ['Rectified', Validators.required],
     rectificationRemarks: ['', [Validators.required, Validators.minLength(10)]]
   });
 
@@ -39,9 +39,6 @@ export class RectifyModalComponent {
     @Inject(MAT_DIALOG_DATA) public data: { finding: AuditFinding }
   ) {
     this.finding = data.finding;
-    if (this.finding.rectificationStatus === 'InProgress') {
-      this.form.patchValue({ rectificationStatus: 'InProgress' });
-    }
     if (this.finding.rectificationRemarks) {
       this.form.patchValue({ rectificationRemarks: this.finding.rectificationRemarks });
     }
@@ -52,7 +49,7 @@ export class RectifyModalComponent {
     this.saving = true;
     const v = this.form.value;
     this.findingSvc.rectify(this.finding.id, {
-      rectificationStatus: v.rectificationStatus as any,
+      complianceStatus: v.complianceStatus!,
       rectificationRemarks: v.rectificationRemarks!
     }).subscribe({
       next: () => { this.snack.open('Rectification saved', 'OK', { duration: 3000 }); this.dialogRef.close(true); },

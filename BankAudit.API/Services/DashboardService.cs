@@ -20,7 +20,7 @@ public class DashboardService : IDashboardService
             .ToListAsync();
 
         var total = findings.Count;
-        var rectified = findings.Count(f => f.RectificationStatus == RectificationStatus.Rectified);
+        var rectified = findings.Count(f => f.ComplianceStatus == "Rectified");
 
         return new KpiDto
         {
@@ -28,8 +28,7 @@ public class DashboardService : IDashboardService
             CriticalCount = findings.Count(f => f.RiskRating == RiskRating.Critical),
             HighCount = findings.Count(f => f.RiskRating == RiskRating.High),
             RectifiedCount = rectified,
-            PendingCount = findings.Count(f => f.RectificationStatus == RectificationStatus.Pending),
-            InProgressCount = findings.Count(f => f.RectificationStatus == RectificationStatus.InProgress),
+            PendingCount = findings.Count(f => f.ComplianceStatus == "Unrectified"),
             RectificationRate = total > 0 ? Math.Round((double)rectified / total * 100, 1) : 0
         };
     }
@@ -51,10 +50,10 @@ public class DashboardService : IDashboardService
     {
         return await _db.AuditFindings
             .Where(f => f.Year == year)
-            .GroupBy(f => f.RectificationStatus)
+            .GroupBy(f => f.ComplianceStatus)
             .Select(g => new StatusBreakdownDto
             {
-                Status = g.Key.ToString(),
+                Status = g.Key,
                 Count = g.Count()
             })
             .ToListAsync();
@@ -72,8 +71,8 @@ public class DashboardService : IDashboardService
                 BranchName = g.Key.BranchName,
                 TotalFindings = g.Count(),
                 CriticalCount = g.Count(f => f.RiskRating == RiskRating.Critical),
-                RectifiedCount = g.Count(f => f.RectificationStatus == RectificationStatus.Rectified),
-                PendingCount = g.Count(f => f.RectificationStatus == RectificationStatus.Pending)
+                RectifiedCount = g.Count(f => f.ComplianceStatus == "Rectified"),
+                PendingCount = g.Count(f => f.ComplianceStatus == "Unrectified")
             })
             .OrderByDescending(b => b.TotalFindings)
             .ToListAsync();
@@ -120,7 +119,6 @@ public class DashboardService : IDashboardService
                 FindingDetails = f.FindingDetails,
                 RiskRating = f.RiskRating.ToString(),
                 NoOfInstances = f.NoOfInstances,
-                RectificationStatus = f.RectificationStatus.ToString(),
                 RectificationRemarks = f.RectificationRemarks,
                 RectifiedAt = f.RectifiedAt,
                 Year = f.Year,

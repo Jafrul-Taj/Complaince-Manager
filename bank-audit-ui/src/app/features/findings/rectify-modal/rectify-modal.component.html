@@ -11,10 +11,10 @@
 
   <form [formGroup]="form" style="margin-top:16px">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Rectification Status</mat-label>
-      <mat-select formControlName="rectificationStatus">
-        <mat-option value="InProgress">In Progress</mat-option>
+      <mat-label>Compliance Status</mat-label>
+      <mat-select formControlName="complianceStatus">
         <mat-option value="Rectified">Rectified</mat-option>
+        <mat-option value="Unrectified">Unrectified</mat-option>
       </mat-select>
     </mat-form-field>
 

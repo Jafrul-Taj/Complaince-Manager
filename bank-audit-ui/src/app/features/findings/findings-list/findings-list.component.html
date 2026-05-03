@@ -34,12 +34,11 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
+          <mat-label>Compliance Status</mat-label>
           <mat-select [(value)]="statusFilter" (selectionChange)="applyLocalFilter()">
             <mat-option value="">All</mat-option>
-            <mat-option value="Pending">Pending</mat-option>
-            <mat-option value="InProgress">In Progress</mat-option>
             <mat-option value="Rectified">Rectified</mat-option>
+            <mat-option value="Unrectified">Unrectified</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -72,10 +71,10 @@
             <span [class]="'chip-' + f.riskRating.toLowerCase()" class="status-chip">{{ f.riskRating }}</span>
           </td>
         </ng-container>
-        <ng-container matColumnDef="rectificationStatus">
+        <ng-container matColumnDef="complianceStatus">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
           <td mat-cell *matCellDef="let f">
-            <span [class]="statusClass(f.rectificationStatus)" class="status-chip">{{ formatStatus(f.rectificationStatus) }}</span>
+            <span [class]="statusClass(f.complianceStatus)" class="status-chip">{{ f.complianceStatus }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="year">
@@ -88,7 +87,7 @@
             <button mat-icon-button color="primary" (click)="openForm(f)" title="Edit">
               <mat-icon>edit</mat-icon>
             </button>
-            @if (f.rectificationStatus !== 'Rectified') {
+            @if (f.complianceStatus !== 'Rectified') {
               <button mat-icon-button color="accent" (click)="openRectify(f)" title="Rectify">
                 <mat-icon>task_alt</mat-icon>
               </button>

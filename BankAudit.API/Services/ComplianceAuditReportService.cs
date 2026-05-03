@@ -1,7 +1,6 @@
 using BankAudit.API.Data;
 using BankAudit.API.DTOs.ComplianceAuditReports;
 using BankAudit.API.Entities;
-using BankAudit.API.Enums;
 using BankAudit.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -110,8 +109,8 @@ public class ComplianceAuditReportService : IComplianceAuditReportService
         AuditTeamLeadName = r.AuditTeamLead?.Name ?? string.Empty,
         AuditTeamLeadDesignation = r.AuditTeamLead?.Designation ?? string.Empty,
         TotalFindings = r.Findings.Count,
-        PendingFindings = r.Findings.Count(f => f.RectificationStatus == RectificationStatus.Pending),
-        RectifiedFindings = r.Findings.Count(f => f.RectificationStatus == RectificationStatus.Rectified),
+        PendingFindings = r.Findings.Count(f => f.ComplianceStatus == "Unrectified"),
+        RectifiedFindings = r.Findings.Count(f => f.ComplianceStatus == "Rectified"),
         CreatedAt = r.CreatedAt
     };
 }
