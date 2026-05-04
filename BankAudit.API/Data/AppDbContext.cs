@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<AuditFinding> AuditFindings => Set<AuditFinding>();
     public DbSet<ICCDEmployee> ICCDEmployees => Set<ICCDEmployee>();
     public DbSet<ComplianceAuditReport> ComplianceAuditReports => Set<ComplianceAuditReport>();
+    public DbSet<ExcelFileData> ExcelFileData => Set<ExcelFileData>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ICCDEmployee>(e =>
         {
             e.HasIndex(x => x.EmployeeId).IsUnique();
+        });
+
+        modelBuilder.Entity<ExcelFileData>(e =>
+        {
+            e.HasOne(x => x.UploadedBy)
+             .WithMany()
+             .HasForeignKey(x => x.UploadedById)
+             .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

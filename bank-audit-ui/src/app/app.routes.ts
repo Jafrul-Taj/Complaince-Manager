@@ -72,6 +72,14 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['ComplianceHead', 'Operator'] }
       },
+      {
+        path: 'excel-upload',
+        title: 'Import Excel',
+        loadComponent: () =>
+          import('./features/excel-upload/excel-upload.component').then(m => m.ExcelUploadComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['Operator'] }
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

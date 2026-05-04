@@ -29,6 +29,7 @@ export class SidebarComponent {
     { label: 'Users', icon: 'people', route: '/app/users', roles: ['Operator'] },
     { label: 'Branches', icon: 'business', route: '/app/branches', roles: ['Operator'] },
     { label: 'Assignments', icon: 'assignment_ind', route: '/app/assignments', roles: ['Operator'] },
+    { label: 'Import Excel', icon: 'upload_file', route: '/app/excel-upload', roles: ['Operator'] },
     { label: 'My Assignments', icon: 'assignment', route: '/app/my-assignments', roles: ['ComplianceOfficer'] }
   ];
 

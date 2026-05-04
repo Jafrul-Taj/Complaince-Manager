@@ -1,0 +1,87 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Import Excel Findings</h1>
+    <p class="subtitle">Upload the fixed-format audit findings Excel file to import all records.</p>
+  </div>
+
+  <!-- Upload card -->
+  <mat-card class="upload-card">
+    <mat-card-content>
+      <div class="drop-zone" [class.has-file]="selectedFile">
+        <mat-icon class="upload-icon">upload_file</mat-icon>
+
+        @if (!selectedFile) {
+          <p class="drop-label">Click <strong>Choose File</strong> to select an <code>.xlsx</code> file</p>
+        } @else {
+          <p class="file-name">
+            <mat-icon class="file-icon">description</mat-icon>
+            {{ selectedFile.name }}
+            <span class="file-size">({{ (selectedFile.size / 1024).toFixed(1) }} KB)</span>
+          </p>
+        }
+
+        <div class="actions">
+          <label mat-raised-button color="primary" class="choose-btn">
+            <mat-icon>folder_open</mat-icon>
+            Choose File
+            <input type="file" accept=".xlsx,.xls" (change)="onFileSelected($event)" hidden />
+          </label>
+
+          @if (selectedFile) {
+            <button mat-raised-button color="accent" [disabled]="uploading" (click)="upload()">
+              <mat-icon>cloud_upload</mat-icon>
+              {{ uploading ? 'Uploading...' : 'Upload & Import' }}
+            </button>
+            <button mat-button (click)="clearFile()" [disabled]="uploading">
+              <mat-icon>close</mat-icon> Clear
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (uploading) {
+        <mat-progress-bar mode="indeterminate" style="margin-top:12px"></mat-progress-bar>
+      }
+
+      @if (lastResult) {
+        <div class="success-banner">
+          <mat-icon>check_circle</mat-icon>
+          Successfully imported <strong>{{ lastResult.imported }}</strong> records from
+          <strong>{{ lastResult.fileName }}</strong>.
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Upload history -->
+  <mat-card style="margin-top: 24px">
+    <mat-card-header>
+      <mat-card-title>Upload History</mat-card-title>
+    </mat-card-header>
+    <mat-divider></mat-divider>
+    <mat-card-content>
+      @if (loadingHistory) {
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      } @else if (uploadHistory.length === 0) {
+        <p class="empty-msg">No uploads yet.</p>
+      } @else {
+        <table mat-table [dataSource]="uploadHistory" class="full-width">
+          <ng-container matColumnDef="fileName">
+            <th mat-header-cell *matHeaderCellDef>File Name</th>
+            <td mat-cell *matCellDef="let row">{{ row.fileName }}</td>
+          </ng-container>
+          <ng-container matColumnDef="uploadedAt">
+            <th mat-header-cell *matHeaderCellDef>Uploaded At</th>
+            <td mat-cell *matCellDef="let row">{{ formatDate(row.uploadedAt) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="recordCount">
+            <th mat-header-cell *matHeaderCellDef>Records</th>
+            <td mat-cell *matCellDef="let row">{{ row.recordCount }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="summaryColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: summaryColumns;"></tr>
+        </table>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>
