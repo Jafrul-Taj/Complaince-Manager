@@ -6,11 +6,20 @@ export interface UploadSummary {
   fileName: string;
   uploadedAt: string;
   recordCount: number;
+  reconciledCount: number;
 }
 
 export interface UploadResult {
   imported: number;
   fileName: string;
+}
+
+export interface ReconcileResult {
+  assignmentsCreated: number;
+  reportsCreated: number;
+  findingsCreated: number;
+  rowsReconciled: number;
+  errors: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,5 +36,9 @@ export class ExcelUploadService {
 
   getSummary() {
     return this.http.get<UploadSummary[]>(this.API);
+  }
+
+  reconcile() {
+    return this.http.post<ReconcileResult>(`${this.API}/reconcile`, {});
   }
 }

@@ -22,6 +22,7 @@ public class ExcelFileData
     public string OriginalFileName { get; set; } = string.Empty;
     public int UploadedById { get; set; }
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+    public bool IsReconciled { get; set; }
 
     public User UploadedBy { get; set; } = null!;
 }

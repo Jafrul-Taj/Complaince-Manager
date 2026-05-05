@@ -7,14 +7,16 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatDividerModule } from '@angular/material/divider';
-import { ExcelUploadService, UploadSummary } from '../../core/services/excel-upload.service';
+import { MatChipsModule } from '@angular/material/chips';
+import { ExcelUploadService, ReconcileResult, UploadSummary } from '../../core/services/excel-upload.service';
 
 @Component({
   selector: 'app-excel-upload',
   standalone: true,
   imports: [
     CommonModule, MatCardModule, MatButtonModule, MatIconModule,
-    MatProgressBarModule, MatSnackBarModule, MatTableModule, MatDividerModule
+    MatProgressBarModule, MatSnackBarModule, MatTableModule,
+    MatDividerModule, MatChipsModule
   ],
   templateUrl: './excel-upload.component.html',
   styleUrl: './excel-upload.component.css'
@@ -24,9 +26,12 @@ export class ExcelUploadComponent implements OnInit {
   uploading = false;
   lastResult: { imported: number; fileName: string } | null = null;
 
-  summaryColumns = ['fileName', 'uploadedAt', 'recordCount'];
+  summaryColumns = ['fileName', 'uploadedAt', 'recordCount', 'reconciledCount', 'status'];
   uploadHistory: UploadSummary[] = [];
   loadingHistory = false;
+
+  reconciling = false;
+  reconcileResult: ReconcileResult | null = null;
 
   constructor(
     private uploadSvc: ExcelUploadService,
@@ -70,6 +75,30 @@ export class ExcelUploadComponent implements OnInit {
   clearFile() {
     this.selectedFile = null;
     this.lastResult = null;
+  }
+
+  reconcile() {
+    this.reconciling = true;
+    this.reconcileResult = null;
+    this.uploadSvc.reconcile().subscribe({
+      next: (res) => {
+        this.reconciling = false;
+        this.reconcileResult = res;
+        this.snack.open(
+          `Reconciled: ${res.rowsReconciled} rows → ${res.findingsCreated} findings, ${res.reportsCreated} reports, ${res.assignmentsCreated} assignments`,
+          'OK', { duration: 8000 }
+        );
+        this.loadHistory();
+      },
+      error: (err) => {
+        this.reconciling = false;
+        this.snack.open(err.error?.message || 'Reconcile failed', 'OK', { duration: 5000 });
+      }
+    });
+  }
+
+  get hasUnreconciled(): boolean {
+    return this.uploadHistory.some(h => h.recordCount > h.reconciledCount);
   }
 
   private loadHistory() {

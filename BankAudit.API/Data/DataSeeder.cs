@@ -339,6 +339,13 @@ public static class DataSeeder
                 new() { EmployeeId = "9352",  Name = "S.M. Jafrul Hasan",           Designation = "OFF",  Unit = "Compliance", Wing = "Compliance" },
                 new() { EmployeeId = "7957",  Name = "Md. Salman Al-Mamun",         Designation = "OFF",  Unit = "Compliance", Wing = "Compliance" },
                 new() { EmployeeId = "10228", Name = "Samzid Khan",                 Designation = "JO",   Unit = "Compliance", Wing = "Compliance" },
+                new() { EmployeeId = "612",   Name = "Md. Abdur Rahim",             Designation = "VP",   Unit = "Compliance", Wing = "Compliance" },
+                // Other Employees
+                new() { EmployeeId = "6527",  Name = "Imrul Hassan",                Designation = "FVP",  Unit = "Audit",      Wing = "Audit" },
+                new() { EmployeeId = "4418",  Name = "Mohammad Ashraful Alam",      Designation = "FVP",  Unit = "Audit",      Wing = "Audit" },
+                new() { EmployeeId = "4587",  Name = "Md. Saifullah",               Designation = "FVP",  Unit = "Audit",      Wing = "Audit" },
+              
+            
             };
 
             context.ICCDEmployees.AddRange(employees);
