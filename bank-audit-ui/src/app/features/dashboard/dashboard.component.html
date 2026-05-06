@@ -1,121 +1,447 @@
-<div class="page-container">
-  <!-- Header -->
-  <div class="page-header">
-    <h1>Compliance Dashboard</h1>
-    <div class="header-controls">
-      <mat-form-field appearance="outline" style="width:120px">
-        <mat-label>Year</mat-label>
-        <mat-select [(value)]="selectedYear" (selectionChange)="loadAll()">
-          @for (y of years; track y) {
-            <mat-option [value]="y">{{ y }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+<div class="dash-wrap">
 
-      <mat-form-field appearance="outline" style="width:200px">
-        <mat-label>Branch</mat-label>
-        <mat-select [(value)]="selectedBranchId" (selectionChange)="loadExport()">
-          <mat-option [value]="null">All Branches</mat-option>
-          @for (b of branches; track b.id) {
-            <mat-option [value]="b.id">{{ b.branchName }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+  <!-- ── Page Header ─────────────────────────────────────────── -->
+  <div class="dash-header">
+    <div class="header-left">
+      <h1 class="dash-title">Compliance Dashboard</h1>
+      <p class="dash-sub">Bank Audit Analytics &amp; Reporting</p>
+    </div>
+    <!-- <button class="btn-export" (click)="exportExcel()" [disabled]="!exportData.length">
+      <span class="material-icons">file_download</span>
+      Export Excel
+    </button> -->
+  </div>
 
-      <button mat-raised-button color="accent" (click)="exportExcel()" [disabled]="exportData.length === 0">
-        <mat-icon>download</mat-icon> Export Excel
+  <!-- ── Filter Bar ──────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-item">
+      <label>Year</label>
+      <select [(ngModel)]="filters.year">
+        <option [ngValue]="0">All Years</option>
+        @for (y of years; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-item filter-item-lg">
+      <label>Branch</label>
+      <select [(ngModel)]="filters.branchId">
+        <option [ngValue]="0">All Branches</option>
+        @for (b of branches; track b.id) {
+          <option [ngValue]="b.id">{{ b.branchName }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <label>Area</label>
+      <select [(ngModel)]="filters.area">
+        <option value="">All Areas</option>
+        @for (a of areas; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <label>Risk Rating</label>
+      <select [(ngModel)]="filters.riskRating">
+        <option value="">All Risks</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <label>Status</label>
+      <select [(ngModel)]="filters.complianceStatus">
+        <option value="">All Status</option>
+        <option value="Rectified">Rectified</option>
+        <option value="Unrectified">Unrectified</option>
+      </select>
+    </div>
+
+    <div class="filter-item filter-item-lg">
+      <label>Officer</label>
+      <select [(ngModel)]="filters.officerId">
+        <option [ngValue]="0">All Officers</option>
+        @for (o of officers; track o.officerId) {
+          <option [ngValue]="o.officerId">{{ o.officerName }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn-reset" (click)="resetFilters()">Reset</button>
+      <button class="btn-apply" (click)="applyFilters()">
+        <span class="material-icons">filter_alt</span>
+        Apply
       </button>
     </div>
   </div>
 
+  <!-- ── Loading ─────────────────────────────────────────────── -->
   @if (loading) {
-    <div class="loading-center">
-      <mat-spinner diameter="48" />
-      <p>Loading dashboard...</p>
+    <div class="loading-overlay">
+      <mat-progress-spinner mode="indeterminate" diameter="40"/>
+      <span>Loading dashboard…</span>
     </div>
-  } @else {
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-      @for (kpi of kpis; track kpi.label) {
-        <mat-card class="kpi-card" [style.border-left-color]="kpi.color">
-          <mat-card-content>
-            <div class="kpi-top">
-              <div class="kpi-icon" [style.background-color]="kpi.bgColor">
-                <mat-icon [style.color]="kpi.color">{{ kpi.icon }}</mat-icon>
-              </div>
-              <div class="kpi-value">{{ kpi.value }}</div>
-            </div>
-            <div class="kpi-label">{{ kpi.label }}</div>
-          </mat-card-content>
-        </mat-card>
-      }
-    </div>
+  }
 
-    <!-- Charts Row 1 -->
-    <div class="charts-row">
-      <mat-card class="chart-card">
-        <mat-card-title>Risk Distribution</mat-card-title>
-        <mat-divider />
-        <mat-card-content>
+  <!-- ── KPI Cards (6, no Critical) ─────────────────────────── -->
+  @if (kpis && !loading) {
+    <div class="kpi-row">
+      <div class="kpi-card" style="--kc:#c62828;--kb:#fff5f5">
+        <div class="kpi-icon"><span class="material-icons">assignment</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.totalFindings }}</div>
+          <div class="kpi-lbl">Total Findings</div>
+        </div>
+      </div>
+      <div class="kpi-card" style="--kc:#dc2626;--kb:#fee2e2">
+        <div class="kpi-icon"><span class="material-icons">warning</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.highCount }}</div>
+          <div class="kpi-lbl">High Risk</div>
+        </div>
+      </div>
+      <div class="kpi-card" style="--kc:#d97706;--kb:#fef3c7">
+        <div class="kpi-icon"><span class="material-icons">info</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.mediumCount }}</div>
+          <div class="kpi-lbl">Medium Risk</div>
+        </div>
+      </div>
+      <div class="kpi-card" style="--kc:#16a34a;--kb:#dcfce7">
+        <div class="kpi-icon"><span class="material-icons">check_circle_outline</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.lowCount }}</div>
+          <div class="kpi-lbl">Low Risk</div>
+        </div>
+      </div>
+      <div class="kpi-card" style="--kc:#059669;--kb:#f0fdf4">
+        <div class="kpi-icon"><span class="material-icons">task_alt</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.rectifiedCount }}</div>
+          <div class="kpi-lbl">Rectified</div>
+        </div>
+      </div>
+      <div class="kpi-card" style="--kc:#008080;--kb:#f0fdfa">
+        <div class="kpi-icon"><span class="material-icons">trending_up</span></div>
+        <div class="kpi-body">
+          <div class="kpi-val">{{ kpis.rectificationRate }}%</div>
+          <div class="kpi-lbl">Rectification Rate</div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Main Content 60/40 ──────────────────────────────────── -->
+  @if (!loading) {
+    <div class="main-content">
+
+      <!-- Left: Charts (60%) -->
+      <div class="charts-col">
+
+        <!-- Row 1: Risk + Status -->
+        <div class="chart-row-2">
+          <div class="chart-card">
+            <div class="card-hdr">Risk Distribution</div>
+            <apx-chart
+              [series]="riskChart.series"
+              [chart]="riskChart.chart"
+              [labels]="riskChart.labels"
+              [colors]="riskChart.colors"
+              [legend]="riskChart.legend"
+              [plotOptions]="riskChart.plotOptions"
+              [dataLabels]="riskChart.dataLabels"
+              [responsive]="riskChart.responsive">
+            </apx-chart>
+          </div>
+          <div class="chart-card">
+            <div class="card-hdr">Rectification Status</div>
+            <apx-chart
+              [series]="statusChart.series"
+              [chart]="statusChart.chart"
+              [xaxis]="statusChart.xaxis"
+              [colors]="statusChart.colors"
+              [plotOptions]="statusChart.plotOptions"
+              [dataLabels]="statusChart.dataLabels"
+              [legend]="statusChart.legend">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Row 2: Monthly Trend -->
+        <div class="chart-card">
+          <div class="card-hdr">Monthly Trend — {{ filters.year || 'All Years' }}</div>
           <apx-chart
-            [series]="riskChart.series"
-            [chart]="riskChart.chart"
-            [labels]="riskChart.labels"
-            [colors]="riskChart.colors"
-            [legend]="riskChart.legend"
-            [plotOptions]="riskChart.plotOptions"
-            [dataLabels]="riskChart.dataLabels">
+            [series]="trendChart.series"
+            [chart]="trendChart.chart"
+            [xaxis]="trendChart.xaxis"
+            [yaxis]="trendChart.yaxis"
+            [fill]="trendChart.fill"
+            [stroke]="trendChart.stroke"
+            [markers]="trendChart.markers"
+            [colors]="trendChart.colors"
+            [dataLabels]="trendChart.dataLabels"
+            [tooltip]="trendChart.tooltip"
+            [grid]="trendChart.grid">
           </apx-chart>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <mat-card class="chart-card">
-        <mat-card-title>Rectification Status</mat-card-title>
-        <mat-divider />
-        <mat-card-content>
-          <apx-chart
-            [series]="statusChart.series"
-            [chart]="statusChart.chart"
-            [xaxis]="statusChart.xaxis"
-            [colors]="statusChart.colors"
-            [plotOptions]="statusChart.plotOptions"
-            [dataLabels]="statusChart.dataLabels">
-          </apx-chart>
-        </mat-card-content>
-      </mat-card>
-    </div>
-
-    <!-- Charts Row 2 -->
-    <div class="charts-row">
-      <mat-card class="chart-card chart-wide">
-        <mat-card-title>Branch-wise Findings</mat-card-title>
-        <mat-divider />
-        <mat-card-content>
+        <!-- Row 3: Branch stacked bar -->
+        <div class="chart-card">
+          <div class="card-hdr">Branch-wise Risk Breakdown (Top 10)</div>
           <apx-chart
             [series]="branchChart.series"
             [chart]="branchChart.chart"
             [xaxis]="branchChart.xaxis"
             [colors]="branchChart.colors"
             [plotOptions]="branchChart.plotOptions"
-            [dataLabels]="branchChart.dataLabels">
+            [dataLabels]="branchChart.dataLabels"
+            [legend]="branchChart.legend"
+            [grid]="branchChart.grid">
           </apx-chart>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <mat-card class="chart-card">
-        <mat-card-title>Monthly Trend ({{ selectedYear }})</mat-card-title>
-        <mat-divider />
-        <mat-card-content>
-          <apx-chart
-            [series]="trendChart.series"
-            [chart]="trendChart.chart"
-            [xaxis]="trendChart.xaxis"
-            [stroke]="trendChart.stroke"
-            [markers]="trendChart.markers"
-            [colors]="trendChart.colors">
-          </apx-chart>
-        </mat-card-content>
-      </mat-card>
-    </div>
+        <!-- Row 4: Year comparison + Officer -->
+        <div class="chart-row-2">
+          <div class="chart-card">
+            <div class="card-hdr">Year-over-Year Comparison</div>
+            <apx-chart
+              [series]="yearChart.series"
+              [chart]="yearChart.chart"
+              [xaxis]="yearChart.xaxis"
+              [colors]="yearChart.colors"
+              [plotOptions]="yearChart.plotOptions"
+              [dataLabels]="yearChart.dataLabels"
+              [legend]="yearChart.legend"
+              [grid]="yearChart.grid">
+            </apx-chart>
+          </div>
+          <div class="chart-card">
+            <div class="card-hdr">Officer Workload (Top 8)</div>
+            <apx-chart
+              [series]="officerChart.series"
+              [chart]="officerChart.chart"
+              [xaxis]="officerChart.xaxis"
+              [colors]="officerChart.colors"
+              [plotOptions]="officerChart.plotOptions"
+              [dataLabels]="officerChart.dataLabels"
+              [legend]="officerChart.legend"
+              [grid]="officerChart.grid">
+            </apx-chart>
+          </div>
+        </div>
+
+      </div><!-- /charts-col -->
+
+      <!-- Right: Tables (40%) -->
+      <div class="tables-col">
+
+        <!-- Branch Summary with search -->
+        <div class="table-card">
+          <div class="card-hdr-row">
+            <span class="card-hdr-text">Branch Summary</span>
+            <input
+              class="inline-search"
+              type="text"
+              placeholder="Search branches…"
+              [(ngModel)]="branchSearch">
+          </div>
+          <div class="mini-scroll branch-scroll">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Branch</th>
+                  <th class="th-num">Total</th>
+                  <th class="th-num text-high">High</th>
+                  <th class="th-num text-medium">Med</th>
+                  <th class="th-num text-low">Low</th>
+                  <th class="th-num">Rate%</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of filteredBranchSummary; track b.branchId) {
+                  <tr>
+                    <td class="td-truncate" title="{{ b.branchName }}">{{ b.branchName }}</td>
+                    <td class="td-num fw-600">{{ b.totalFindings }}</td>
+                    <td class="td-num text-high">{{ b.highCount }}</td>
+                    <td class="td-num text-medium">{{ b.mediumCount }}</td>
+                    <td class="td-num text-low">{{ b.lowCount }}</td>
+                    <td class="td-num">
+                      <span class="rate-pill {{ b.rectificationRate >= 70 ? 'rate-good' : b.rectificationRate >= 40 ? 'rate-mid' : 'rate-bad' }}">{{ b.rectificationRate }}%</span>
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="6" class="td-empty">No branches found</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Officer Performance -->
+        <div class="table-card">
+          <div class="card-hdr">Officer Performance</div>
+          <div class="mini-scroll">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Officer</th>
+                  <th class="th-num">Total</th>
+                  <th class="th-num text-high">High</th>
+                  <th class="th-num text-medium">Med</th>
+                  <th class="th-num text-low">Low</th>
+                  <th class="th-num text-green">Rect.</th>
+                  <th class="th-num">Rate%</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of officerSummary; track o.officerId) {
+                  <tr>
+                    <td class="td-truncate" title="{{ o.officerName }}">{{ o.officerName }}</td>
+                    <td class="td-num fw-600">{{ o.totalFindings }}</td>
+                    <td class="td-num text-high">{{ o.highCount }}</td>
+                    <td class="td-num text-medium">{{ o.mediumCount }}</td>
+                    <td class="td-num text-low">{{ o.lowCount }}</td>
+                    <td class="td-num text-green">{{ o.rectifiedCount }}</td>
+                    <td class="td-num">
+                      <span class="rate-pill {{ o.rectificationRate >= 70 ? 'rate-good' : o.rectificationRate >= 40 ? 'rate-mid' : 'rate-bad' }}">{{ o.rectificationRate }}%</span>
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="7" class="td-empty">No data</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Year Overview -->
+        <div class="table-card">
+          <div class="card-hdr">Year Overview</div>
+          <div class="mini-scroll">
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th class="th-num">Total</th>
+                  <th class="th-num text-high">High</th>
+                  <th class="th-num text-medium">Med</th>
+                  <th class="th-num text-low">Low</th>
+                  <th class="th-num">Rate%</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (y of yearComparison; track y.year) {
+                  <tr>
+                    <td class="fw-600">{{ y.year }}</td>
+                    <td class="td-num fw-600">{{ y.totalFindings }}</td>
+                    <td class="td-num text-high">{{ y.highCount }}</td>
+                    <td class="td-num text-medium">{{ y.mediumCount }}</td>
+                    <td class="td-num text-low">{{ y.lowCount }}</td>
+                    <td class="td-num">
+                      <span class="rate-pill {{ y.rectificationRate >= 70 ? 'rate-good' : y.rectificationRate >= 40 ? 'rate-mid' : 'rate-bad' }}">{{ y.rectificationRate }}%</span>
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="6" class="td-empty">No data</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /tables-col -->
+    </div><!-- /main-content -->
+
+    <!-- ── Bottom Tabs ───────────────────────────────────────── -->
+    <mat-tab-group class="breakdown-tabs" animationDuration="200ms">
+
+      <mat-tab label="Area Breakdown">
+        <div class="tab-content">
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th class="th-left">Finding Area</th>
+                <th class="th-num">Total</th>
+                <th class="th-num text-high">High</th>
+                <th class="th-num text-medium">Medium</th>
+                <th class="th-num text-low">Low</th>
+                <th class="th-num text-green">Rectified</th>
+                <th class="th-num">Rate %</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of areaBreakdown; track a.area) {
+                <tr>
+                  <td class="td-area-name">{{ a.area }}</td>
+                  <td class="td-num fw-600">{{ a.totalFindings }}</td>
+                  <td class="td-num text-high">{{ a.highCount }}</td>
+                  <td class="td-num text-medium">{{ a.mediumCount }}</td>
+                  <td class="td-num text-low">{{ a.lowCount }}</td>
+                  <td class="td-num text-green">{{ a.rectifiedCount }}</td>
+                  <td class="td-num">
+                    <span class="rate-pill {{ a.rectificationRate >= 70 ? 'rate-good' : a.rectificationRate >= 40 ? 'rate-mid' : 'rate-bad' }}">{{ a.rectificationRate }}%</span>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="7" class="td-empty">No area data available</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Category Breakdown">
+        <div class="tab-content">
+          <div class="tab-search-row">
+            <input
+              class="tab-search"
+              type="text"
+              placeholder="Search categories…"
+              [(ngModel)]="categorySearch">
+            <span class="tab-count">{{ filteredCategoryBreakdown.length }} categories</span>
+          </div>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th class="th-idx">#</th>
+                <th class="th-left">Category</th>
+                <th class="th-num">Total</th>
+                <th class="th-num text-green">Rectified</th>
+                <th class="th-num">Rate %</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of filteredCategoryBreakdown; track c.category; let i = $index) {
+                <tr>
+                  <td class="td-idx">{{ i + 1 }}</td>
+                  <td class="td-area-name">{{ c.category }}</td>
+                  <td class="td-num fw-600">{{ c.count }}</td>
+                  <td class="td-num text-green">{{ c.rectifiedCount }}</td>
+                  <td class="td-num">
+                    <span class="rate-pill {{ c.rectificationRate >= 70 ? 'rate-good' : c.rectificationRate >= 40 ? 'rate-mid' : 'rate-bad' }}">{{ c.rectificationRate }}%</span>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="5" class="td-empty">No categories found</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
   }
+
 </div>
