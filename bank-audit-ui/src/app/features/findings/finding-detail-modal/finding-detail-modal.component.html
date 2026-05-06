@@ -1,0 +1,84 @@
+<div class="modal-header">
+  <div class="modal-title-wrap">
+    <mat-icon class="modal-title-icon">find_in_page</mat-icon>
+    <div>
+      <h2 class="modal-title">Finding Detail</h2>
+      <p class="modal-subtitle">SL# {{ f.slNo }} &nbsp;·&nbsp; {{ f.branchName }} ({{ f.branchCode }}) &nbsp;·&nbsp; {{ f.year }}</p>
+    </div>
+  </div>
+  <button mat-icon-button [mat-dialog-close]="false" class="close-btn"><mat-icon>close</mat-icon></button>
+</div>
+
+<mat-dialog-content class="modal-body">
+
+  <!-- Risk + Status badges row -->
+  <div class="badge-row">
+    <span [class]="'risk-badge ' + riskClass(f.riskRating)">{{ f.riskRating }}</span>
+    <span [class]="'status-badge ' + statusClass(f.complianceStatus)">{{ f.complianceStatus }}</span>
+    @if (f.auditLeaderName) {
+      <span class="info-tag"><mat-icon class="tag-icon">person_pin</mat-icon>{{ f.auditLeaderName }}</span>
+    }
+    @if (f.officerName) {
+      <span class="info-tag"><mat-icon class="tag-icon">badge</mat-icon>{{ f.officerName }}</span>
+    }
+  </div>
+
+  <!-- Field grid -->
+  <div class="detail-grid">
+    <div class="field-block">
+      <label>Finding Area</label>
+      <p>{{ f.findingArea || '—' }}</p>
+    </div>
+    <div class="field-block">
+      <label>Category</label>
+      <p>{{ f.category || '—' }}</p>
+    </div>
+    <div class="field-block">
+      <label>Lapses Type</label>
+      <p>{{ f.lapsesType || '—' }}</p>
+    </div>
+    <div class="field-block">
+      <label>No. of Instances</label>
+      <p>{{ f.noOfInstances || '—' }}</p>
+    </div>
+    <div class="field-block">
+      <label>Audit Base Date</label>
+      <p>{{ formatDate(f.auditBaseDate) }}</p>
+    </div>
+    <div class="field-block">
+      <label>Year</label>
+      <p>{{ f.year }}</p>
+    </div>
+
+    <div class="field-block full-col">
+      <label>Name of Customers</label>
+      <p>{{ f.nameOfCustomers || '—' }}</p>
+    </div>
+
+    <div class="field-block full-col">
+      <label>Lapses Originated</label>
+      <p>{{ f.lapsesOriginated || '—' }}</p>
+    </div>
+
+    <div class="field-block full-col">
+      <label>Finding Details / Irregularities</label>
+      <p class="preformatted">{{ f.findingDetails || '—' }}</p>
+    </div>
+
+    @if (f.complianceStatus === 'Rectified') {
+      <div class="field-block full-col rectification-section">
+        <label>Rectification Remarks</label>
+        <p class="preformatted">{{ f.rectificationRemarks || '—' }}</p>
+      </div>
+      <div class="field-block">
+        <label>Rectified At</label>
+        <p>{{ formatDate(f.rectifiedAt) }}</p>
+      </div>
+    }
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="false">Close</button>
+</mat-dialog-actions>

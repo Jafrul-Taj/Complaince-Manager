@@ -8,6 +8,8 @@ export interface AuditFinding {
   branchCode: string;
   assignedOfficerId: number;
   officerName: string;
+  auditLeaderName: string;
+  complianceOfficerName: string;
   findingArea: string;
   slNo: string;
   nameOfCustomers: string;

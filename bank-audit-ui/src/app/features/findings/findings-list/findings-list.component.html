@@ -1,109 +1,243 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="header-left">
-      <button mat-icon-button (click)="goBack()" title="Back">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
+<div class="flist-root">
+
+  <!-- ── Page Header ───────────────────────────────────────────── -->
+  <div class="flist-topbar">
+    <div class="topbar-left">
+      <button mat-icon-button (click)="goBack()" class="back-btn"><mat-icon>arrow_back</mat-icon></button>
       <div>
-        <h1>Audit Findings</h1>
+        <h2 class="page-title">Audit Findings</h2>
         @if (reportId) {
-          <span class="branch-context">Report #{{ reportId }}</span>
+          <span class="page-sub">Report #{{ reportId }}</span>
         }
       </div>
     </div>
     @if (reportId) {
-      <button mat-raised-button color="primary" (click)="openForm()">
+      <button mat-raised-button color="primary" class="add-btn" (click)="openForm()">
         <mat-icon>add</mat-icon> Add Finding
       </button>
     }
   </div>
 
-  <!-- Filters -->
-  <mat-card style="margin-bottom:16px">
-    <mat-card-content style="padding:16px">
-      <div class="filters-row">
-        <mat-form-field appearance="outline">
-          <mat-label>Risk Rating</mat-label>
-          <mat-select [(value)]="riskFilter" (selectionChange)="applyLocalFilter()">
-            <mat-option value="">All</mat-option>
-            <mat-option value="Critical">Critical</mat-option>
-            <mat-option value="High">High</mat-option>
-            <mat-option value="Medium">Medium</mat-option>
-            <mat-option value="Low">Low</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Compliance Status</mat-label>
-          <mat-select [(value)]="statusFilter" (selectionChange)="applyLocalFilter()">
-            <mat-option value="">All</mat-option>
-            <mat-option value="Rectified">Rectified</mat-option>
-            <mat-option value="Unrectified">Unrectified</mat-option>
-          </mat-select>
-        </mat-form-field>
+  <!-- ── Summary Card ──────────────────────────────────────────── -->
+  @if (totalCount > 0) {
+    <div class="summary-card">
+      <div class="summary-meta">
+        @if (headerFinding?.branchName) {
+          <div class="meta-item">
+            <span class="meta-label">Branch</span>
+            <span class="meta-value">{{ headerFinding?.branchName }}<span class="meta-code">&nbsp;{{ headerFinding?.branchCode }}</span></span>
+          </div>
+        }
+        @if (headerFinding?.year) {
+          <div class="meta-item">
+            <span class="meta-label">Year</span>
+            <span class="meta-value">{{ headerFinding?.year }}</span>
+          </div>
+        }
+        @if (headerFinding?.auditLeaderName) {
+          <div class="meta-item">
+            <span class="meta-label">Audit Leader</span>
+            <span class="meta-value">{{ headerFinding?.auditLeaderName }}</span>
+          </div>
+        }
+        @if (headerFinding?.officerName) {
+          <div class="meta-item">
+            <span class="meta-label">Officer</span>
+            <span class="meta-value">{{ headerFinding?.officerName }}</span>
+          </div>
+        }
       </div>
-    </mat-card-content>
-  </mat-card>
 
-  <!-- Table -->
-  <mat-card>
-    <mat-card-content>
-      <table mat-table [dataSource]="dataSource" matSort class="full-width">
-        <ng-container matColumnDef="slNo">
-          <th mat-header-cell *matHeaderCellDef>Sl.No</th>
-          <td mat-cell *matCellDef="let f">{{ f.slNo }}</td>
-        </ng-container>
-        <ng-container matColumnDef="branchName">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
-          <td mat-cell *matCellDef="let f">{{ f.branchName }}</td>
-        </ng-container>
-        <ng-container matColumnDef="findingArea">
-          <th mat-header-cell *matHeaderCellDef>Finding Area</th>
-          <td mat-cell *matCellDef="let f">{{ f.findingArea }}</td>
-        </ng-container>
-        <ng-container matColumnDef="findingDetails">
-          <th mat-header-cell *matHeaderCellDef>Details</th>
-          <td mat-cell *matCellDef="let f" class="details-cell">{{ f.findingDetails | slice:0:80 }}{{ f.findingDetails.length > 80 ? '...' : '' }}</td>
-        </ng-container>
-        <ng-container matColumnDef="riskRating">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Risk</th>
-          <td mat-cell *matCellDef="let f">
-            <span [class]="'chip-' + f.riskRating.toLowerCase()" class="status-chip">{{ f.riskRating }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="complianceStatus">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-          <td mat-cell *matCellDef="let f">
-            <span [class]="statusClass(f.complianceStatus)" class="status-chip">{{ f.complianceStatus }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="year">
-          <th mat-header-cell *matHeaderCellDef>Year</th>
-          <td mat-cell *matCellDef="let f">{{ f.year }}</td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let f">
-            <button mat-icon-button color="primary" (click)="openForm(f)" title="Edit">
-              <mat-icon>edit</mat-icon>
+      <div class="summary-stats">
+        <div class="stat-pill stat-total">
+          <span class="stat-num">{{ totalCount }}</span>
+          <span class="stat-lbl">Total</span>
+        </div>
+        @if (criticalCount > 0) {
+          <div class="stat-pill stat-critical">
+            <span class="stat-num">{{ criticalCount }}</span>
+            <span class="stat-lbl">Critical</span>
+          </div>
+        }
+        <div class="stat-pill stat-high">
+          <span class="stat-num">{{ highCount }}</span>
+          <span class="stat-lbl">High</span>
+        </div>
+        <div class="stat-pill stat-medium">
+          <span class="stat-num">{{ mediumCount }}</span>
+          <span class="stat-lbl">Medium</span>
+        </div>
+        <div class="stat-pill stat-low">
+          <span class="stat-num">{{ lowCount }}</span>
+          <span class="stat-lbl">Low</span>
+        </div>
+        <div class="stat-pill stat-rectified">
+          <span class="stat-num">{{ rectifiedCount }}</span>
+          <span class="stat-lbl">Rectified</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Filter Bar ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <mat-icon class="search-ico">search</mat-icon>
+      <input class="search-input" placeholder="Search findings…" (input)="onSearch($event)" />
+    </div>
+
+    <div class="filter-selects">
+      <select class="flt-select" (change)="onRiskChange($event)">
+        <option value="">All Risk Levels</option>
+        <option value="Critical">Critical</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+
+      <select class="flt-select" (change)="onStatusChange($event)">
+        <option value="">All Statuses</option>
+        <option value="Rectified">Rectified</option>
+        <option value="Unrectified">Unrectified</option>
+      </select>
+    </div>
+
+    @if (selectedIds.size > 0) {
+      <button class="bulk-del-btn" (click)="bulkDelete()">
+        <mat-icon>delete_sweep</mat-icon>
+        Delete ({{ selectedIds.size }})
+      </button>
+    }
+  </div>
+
+  <!-- ── Table ─────────────────────────────────────────────────── -->
+  <div class="table-wrap">
+    <table mat-table [dataSource]="dataSource" matSort class="findings-table">
+
+      <!-- Checkbox -->
+      <ng-container matColumnDef="select" sticky>
+        <th mat-header-cell *matHeaderCellDef class="col-chk">
+          <input type="checkbox" class="row-chk" [checked]="isAllSelected()" (change)="toggleAll()" />
+        </th>
+        <td mat-cell *matCellDef="let f" class="col-chk" (click)="$event.stopPropagation()">
+          <input type="checkbox" class="row-chk" [checked]="selectedIds.has(f.id)" (change)="toggleSelect(f.id)" />
+        </td>
+      </ng-container>
+
+      <!-- SL No -->
+      <ng-container matColumnDef="slNo">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-sl">Sl.No</th>
+        <td mat-cell *matCellDef="let f" class="col-sl mono">{{ f.slNo }}</td>
+      </ng-container>
+
+      <!-- Branch -->
+      <ng-container matColumnDef="branch">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
+        <td mat-cell *matCellDef="let f">
+          <div class="branch-cell">
+            <span class="branch-name">{{ f.branchName }}</span>
+            <span class="branch-code">{{ f.branchCode }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Finding Area -->
+      <ng-container matColumnDef="findingArea">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-area">Area</th>
+        <td mat-cell *matCellDef="let f" class="col-area">{{ f.findingArea }}</td>
+      </ng-container>
+
+      <!-- Customers -->
+      <ng-container matColumnDef="nameOfCustomers">
+        <th mat-header-cell *matHeaderCellDef class="col-cust">Customers</th>
+        <td mat-cell *matCellDef="let f" class="col-cust trunc" [matTooltip]="f.nameOfCustomers" matTooltipPosition="above">
+          {{ truncate(f.nameOfCustomers, 35) }}
+        </td>
+      </ng-container>
+
+      <!-- Finding Details -->
+      <ng-container matColumnDef="findingDetails">
+        <th mat-header-cell *matHeaderCellDef class="col-details">Details</th>
+        <td mat-cell *matCellDef="let f" class="col-details trunc" [matTooltip]="f.findingDetails" matTooltipPosition="above">
+          {{ truncate(f.findingDetails, 70) }}
+        </td>
+      </ng-container>
+
+      <!-- Lapses Originated -->
+      <ng-container matColumnDef="lapsesOriginated">
+        <th mat-header-cell *matHeaderCellDef class="col-lapses">Lapses</th>
+        <td mat-cell *matCellDef="let f" class="col-lapses trunc" [matTooltip]="f.lapsesOriginated" matTooltipPosition="above">
+          {{ truncate(f.lapsesOriginated, 30) }}
+        </td>
+      </ng-container>
+
+      <!-- Category -->
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-cat">Category</th>
+        <td mat-cell *matCellDef="let f" class="col-cat trunc" [matTooltip]="f.category" matTooltipPosition="above">
+          {{ truncate(f.category, 22) }}
+        </td>
+      </ng-container>
+
+      <!-- Risk Rating -->
+      <ng-container matColumnDef="riskRating">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-risk">Risk</th>
+        <td mat-cell *matCellDef="let f" class="col-risk">
+          <span [class]="'risk-badge risk-' + f.riskRating.toLowerCase()">{{ f.riskRating }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Compliance Status -->
+      <ng-container matColumnDef="complianceStatus">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-status">Status</th>
+        <td mat-cell *matCellDef="let f" class="col-status">
+          <span class="status-indicator">
+            <span [class]="'dot dot-' + statusDotClass(f.complianceStatus)"></span>
+            {{ f.complianceStatus }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Audit Base Date -->
+      <ng-container matColumnDef="auditBaseDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-date">Audit Date</th>
+        <td mat-cell *matCellDef="let f" class="col-date mono">{{ formatDate(f.auditBaseDate) }}</td>
+      </ng-container>
+
+      <!-- Actions -->
+      <ng-container matColumnDef="actions" stickyEnd>
+        <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+        <td mat-cell *matCellDef="let f" class="col-actions" (click)="$event.stopPropagation()">
+          <button class="act-btn act-view" (click)="openDetail(f)" matTooltip="View Details">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button class="act-btn act-edit" (click)="openForm(f)" matTooltip="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          @if (f.complianceStatus !== 'Rectified') {
+            <button class="act-btn act-rectify" (click)="openRectify(f)" matTooltip="Rectify">
+              <mat-icon>task_alt</mat-icon>
             </button>
-            @if (f.complianceStatus !== 'Rectified') {
-              <button mat-icon-button color="accent" (click)="openRectify(f)" title="Rectify">
-                <mat-icon>task_alt</mat-icon>
-              </button>
-            }
-            <button mat-icon-button color="warn" (click)="delete(f)" title="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell" colspan="8" style="text-align:center; padding:24px">No findings found.</td>
-        </tr>
-      </table>
-      <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons />
-    </mat-card-content>
-  </mat-card>
+          }
+          <button class="act-btn act-del" (click)="delete(f)" matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns;"
+          class="data-row"
+          [class.row-selected]="selectedIds.has(row.id)"
+          (click)="openDetail(row)"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data-row" [attr.colspan]="columns.length">
+          <mat-icon>search_off</mat-icon>
+          No findings match your filters.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons class="findings-paginator" />
 </div>

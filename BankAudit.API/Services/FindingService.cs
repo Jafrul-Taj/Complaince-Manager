@@ -17,6 +17,10 @@ public class FindingService : IFindingService
         var query = _db.AuditFindings
             .Include(f => f.Branch)
             .Include(f => f.AssignedOfficer)
+            .Include(f => f.ComplianceAuditReport!)
+                .ThenInclude(r => r.AuditTeamLead)
+            .Include(f => f.ComplianceAuditReport!)
+                .ThenInclude(r => r.User)
             .AsQueryable();
 
         if (isOfficer)
@@ -31,10 +35,8 @@ public class FindingService : IFindingService
         if (branchId.HasValue)
             query = query.Where(f => f.BranchId == branchId.Value);
 
-        return await query
-            .OrderByDescending(f => f.CreatedAt)
-            .Select(f => ToDto(f))
-            .ToListAsync();
+        var findings = await query.OrderByDescending(f => f.CreatedAt).ToListAsync();
+        return findings.Select(ToDto).ToList();
     }
 
     public async Task<FindingDto?> GetByIdAsync(int id)
@@ -42,6 +44,10 @@ public class FindingService : IFindingService
         var finding = await _db.AuditFindings
             .Include(f => f.Branch)
             .Include(f => f.AssignedOfficer)
+            .Include(f => f.ComplianceAuditReport!)
+                .ThenInclude(r => r.AuditTeamLead)
+            .Include(f => f.ComplianceAuditReport!)
+                .ThenInclude(r => r.User)
             .FirstOrDefaultAsync(f => f.Id == id);
         return finding is null ? null : ToDto(finding);
     }
@@ -74,17 +80,12 @@ public class FindingService : IFindingService
         _db.AuditFindings.Add(finding);
         await _db.SaveChangesAsync();
 
-        await _db.Entry(finding).Reference(f => f.Branch).LoadAsync();
-        await _db.Entry(finding).Reference(f => f.AssignedOfficer).LoadAsync();
-
-        return ToDto(finding);
+        return await GetByIdAsync(finding.Id) ?? ToDto(finding);
     }
 
     public async Task<FindingDto?> UpdateAsync(int id, UpdateFindingRequest request, int officerId)
     {
         var finding = await _db.AuditFindings
-            .Include(f => f.Branch)
-            .Include(f => f.AssignedOfficer)
             .FirstOrDefaultAsync(f => f.Id == id && f.AssignedOfficerId == officerId);
         if (finding is null) return null;
 
@@ -102,14 +103,12 @@ public class FindingService : IFindingService
         finding.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        return ToDto(finding);
+        return await GetByIdAsync(id);
     }
 
     public async Task<FindingDto?> RectifyAsync(int id, RectifyFindingRequest request, int officerId)
     {
         var finding = await _db.AuditFindings
-            .Include(f => f.Branch)
-            .Include(f => f.AssignedOfficer)
             .FirstOrDefaultAsync(f => f.Id == id && f.AssignedOfficerId == officerId);
         if (finding is null) return null;
 
@@ -121,7 +120,7 @@ public class FindingService : IFindingService
             finding.RectifiedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        return ToDto(finding);
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -142,6 +141,8 @@ public class FindingService : IFindingService
         BranchCode = f.Branch?.BranchCode ?? string.Empty,
         AssignedOfficerId = f.AssignedOfficerId,
         OfficerName = f.AssignedOfficer?.FullName ?? string.Empty,
+        AuditLeaderName = f.ComplianceAuditReport?.AuditTeamLead?.Name ?? string.Empty,
+        ComplianceOfficerName = f.ComplianceAuditReport?.User?.FullName ?? string.Empty,
         FindingArea = f.FindingArea,
         SlNo = f.SlNo,
         NameOfCustomers = f.NameOfCustomers,

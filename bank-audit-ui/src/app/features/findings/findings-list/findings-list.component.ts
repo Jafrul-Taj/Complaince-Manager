@@ -6,44 +6,42 @@ import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { ReactiveFormsModule } from '@angular/forms';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FindingService } from '../../../core/services/finding.service';
 import { AuditFinding } from '../../../core/models/finding.model';
 import { FindingFormComponent } from '../finding-form/finding-form.component';
 import { RectifyModalComponent } from '../rectify-modal/rectify-modal.component';
+import { FindingDetailModalComponent } from '../finding-detail-modal/finding-detail-modal.component';
 
 @Component({
   selector: 'app-findings-list',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatTableModule, MatSortModule,
-    MatPaginatorModule, MatButtonModule, MatIconModule, MatCardModule,
-    MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatChipsModule, MatSnackBarModule
+    CommonModule, MatTableModule, MatSortModule, MatPaginatorModule,
+    MatButtonModule, MatIconModule, MatDialogModule, MatSnackBarModule,
+    MatTooltipModule
   ],
   templateUrl: './findings-list.component.html',
   styleUrl: './findings-list.component.css'
 })
 export class FindingsListComponent implements OnInit, AfterViewInit {
-  columns = ['slNo', 'branchName', 'findingArea', 'findingDetails', 'riskRating', 'complianceStatus', 'year', 'actions'];
+  columns = ['select', 'slNo', 'branch', 'findingArea', 'nameOfCustomers', 'findingDetails',
+             'lapsesOriginated', 'category', 'riskRating', 'complianceStatus', 'auditBaseDate', 'actions'];
+
   dataSource = new MatTableDataSource<AuditFinding>([]);
   allFindings: AuditFinding[] = [];
 
   reportId: number | null = null;
   branchId: number | null = null;
   selectedYear: number | null = null;
+
+  searchTerm = '';
   riskFilter = '';
   statusFilter = '';
 
-  reportLabel = '';
-  branchLabel = '';
+  selectedIds = new Set<number>();
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -58,9 +56,9 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      this.reportId = params['reportId'] ? +params['reportId'] : null;
-      this.branchId = params['branchId'] ? +params['branchId'] : null;
-      this.selectedYear = params['year'] ? +params['year'] : null;
+      this.reportId  = params['reportId']  ? +params['reportId']  : null;
+      this.branchId  = params['branchId']  ? +params['branchId']  : null;
+      this.selectedYear = params['year']   ? +params['year']      : null;
       this.load();
     });
   }
@@ -77,6 +75,7 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
       this.reportId ?? undefined
     ).subscribe(findings => {
       this.allFindings = findings;
+      this.selectedIds.clear();
       this.applyLocalFilter();
     });
   }
@@ -91,11 +90,92 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
     }
   }
 
+  onSearch(event: Event) {
+    this.searchTerm = (event.target as HTMLInputElement).value;
+    this.applyLocalFilter();
+  }
+
+  onRiskChange(event: Event) {
+    this.riskFilter = (event.target as HTMLSelectElement).value;
+    this.applyLocalFilter();
+  }
+
+  onStatusChange(event: Event) {
+    this.statusFilter = (event.target as HTMLSelectElement).value;
+    this.applyLocalFilter();
+  }
+
   applyLocalFilter() {
     let filtered = this.allFindings;
-    if (this.riskFilter) filtered = filtered.filter(f => f.riskRating === this.riskFilter);
+
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(f =>
+        f.slNo.toLowerCase().includes(term) ||
+        f.branchName.toLowerCase().includes(term) ||
+        f.findingArea.toLowerCase().includes(term) ||
+        f.nameOfCustomers.toLowerCase().includes(term) ||
+        f.findingDetails.toLowerCase().includes(term) ||
+        f.category.toLowerCase().includes(term) ||
+        f.lapsesOriginated.toLowerCase().includes(term) ||
+        f.officerName.toLowerCase().includes(term) ||
+        (f.auditLeaderName || '').toLowerCase().includes(term)
+      );
+    }
+    if (this.riskFilter)   filtered = filtered.filter(f => f.riskRating === this.riskFilter);
     if (this.statusFilter) filtered = filtered.filter(f => f.complianceStatus === this.statusFilter);
+
     this.dataSource.data = filtered;
+  }
+
+  // ── Summary getters ──────────────────────────────────────────────
+  get headerFinding(): AuditFinding | undefined { return this.allFindings[0]; }
+  get totalCount()    { return this.allFindings.length; }
+  get criticalCount() { return this.allFindings.filter(f => f.riskRating === 'Critical').length; }
+  get highCount()     { return this.allFindings.filter(f => f.riskRating === 'High').length; }
+  get mediumCount()   { return this.allFindings.filter(f => f.riskRating === 'Medium').length; }
+  get lowCount()      { return this.allFindings.filter(f => f.riskRating === 'Low').length; }
+  get rectifiedCount(){ return this.allFindings.filter(f => f.complianceStatus === 'Rectified').length; }
+
+  // ── Bulk select ──────────────────────────────────────────────────
+  toggleSelect(id: number) {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  toggleAll() {
+    if (this.isAllSelected()) {
+      this.selectedIds.clear();
+    } else {
+      this.dataSource.data.forEach(f => this.selectedIds.add(f.id));
+    }
+  }
+
+  isAllSelected(): boolean {
+    const rows = this.dataSource.data;
+    return rows.length > 0 && rows.every(f => this.selectedIds.has(f.id));
+  }
+
+  bulkDelete() {
+    const count = this.selectedIds.size;
+    if (!confirm(`Delete ${count} selected finding(s)?`)) return;
+    const ids = [...this.selectedIds];
+    let done = 0;
+    ids.forEach(id => {
+      this.findingSvc.delete(id).subscribe({
+        next: () => { done++; if (done === ids.length) { this.snack.open(`Deleted ${count} findings`, 'OK', { duration: 3000 }); this.load(); } },
+        error: () => { done++; if (done === ids.length) { this.snack.open('Some deletions failed', 'OK', { duration: 3000 }); this.load(); } }
+      });
+    });
+  }
+
+  // ── Dialogs ──────────────────────────────────────────────────────
+  openDetail(finding: AuditFinding) {
+    this.dialog.open(FindingDetailModalComponent, {
+      width: '680px',
+      maxHeight: '90vh',
+      data: { finding }
+    });
   }
 
   openForm(finding?: AuditFinding) {
@@ -115,18 +195,26 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
   }
 
   delete(f: AuditFinding) {
-    if (!confirm(`Delete finding "${f.slNo} — ${f.findingArea}"?`)) return;
+    if (!confirm(`Delete finding "${f.slNo}"?`)) return;
     this.findingSvc.delete(f.id).subscribe({
       next: () => { this.snack.open('Finding deleted', 'OK', { duration: 3000 }); this.load(); },
       error: () => this.snack.open('Delete failed', 'OK', { duration: 3000 })
     });
   }
 
-  statusClass(s: string) {
-    return s === 'Rectified' ? 'chip-rectified' : 'chip-pending';
+  // ── Helpers ──────────────────────────────────────────────────────
+  formatDate(d: string | null | undefined): string {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-GB'); // dd/MM/yyyy
   }
 
-  formatStatus(s: string) {
-    return s;
+  truncate(text: string, len: number): string {
+    return text.length > len ? text.slice(0, len) + '…' : text;
+  }
+
+  statusDotClass(s: string): string {
+    if (s === 'Rectified') return 'green';
+    if (s === 'Unrectified') return 'red';
+    return 'amber';
   }
 }

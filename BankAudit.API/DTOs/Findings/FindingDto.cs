@@ -23,6 +23,8 @@ public class FindingDto
     public string? RectificationRemarks { get; set; }
     public DateTime? RectifiedAt { get; set; }
     public int Year { get; set; }
+    public string AuditLeaderName { get; set; } = string.Empty;
+    public string ComplianceOfficerName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
