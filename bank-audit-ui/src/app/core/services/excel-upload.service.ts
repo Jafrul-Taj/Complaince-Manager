@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 export interface UploadSummary {
@@ -9,9 +9,21 @@ export interface UploadSummary {
   reconciledCount: number;
 }
 
+export interface SheetStat {
+  sheetName: string;
+  totalRows: number;
+  imported: number;
+  skipped: number;
+  errors: number;
+}
+
 export interface UploadResult {
   imported: number;
   fileName: string;
+  sheetsProcessed: number;
+  skippedRows: number;
+  sheetStats: SheetStat[];
+  rowErrors: string[];
 }
 
 export interface ReconcileResult {
@@ -31,7 +43,10 @@ export class ExcelUploadService {
   upload(file: File) {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<UploadResult>(this.API, form);
+    return this.http.post<UploadResult>(this.API, form, {
+      reportProgress: true,
+      observe: 'events'
+    }) as import('rxjs').Observable<HttpEvent<UploadResult>>;
   }
 
   getSummary() {

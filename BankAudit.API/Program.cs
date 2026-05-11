@@ -5,11 +5,24 @@ using BankAudit.API.Middleware;
 using BankAudit.API.Services;
 using BankAudit.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Allow large Excel uploads (up to 100 MB)
+builder.WebHost.ConfigureKestrel(kestrel =>
+{
+    kestrel.Limits.MaxRequestBodySize = 100 * 1024 * 1024;
+});
+builder.Services.Configure<FormOptions>(form =>
+{
+    form.MultipartBodyLengthLimit = 100 * 1024 * 1024;
+    form.ValueLengthLimit         = int.MaxValue;
+    form.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 // EF Core + SQLite
 builder.Services.AddDbContext<AppDbContext>(opt =>

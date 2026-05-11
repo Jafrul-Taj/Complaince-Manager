@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 
 namespace BankAudit.API.Controllers;
 
@@ -18,14 +17,23 @@ namespace BankAudit.API.Controllers;
 public class ExcelUploadController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<ExcelUploadController> _logger;
 
-    public ExcelUploadController(AppDbContext db) => _db = db;
+    public ExcelUploadController(AppDbContext db, ILogger<ExcelUploadController> logger)
+    {
+        _db    = db;
+        _logger = logger;
+    }
 
     private int CurrentUserId =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+    // ──────────────────────────────────────────────────────────────
+    // POST /api/excel-upload  — Import rows from all sheets
+    // ──────────────────────────────────────────────────────────────
     [HttpPost]
-    [RequestSizeLimit(20 * 1024 * 1024)]
+    [RequestSizeLimit(100 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file is null || file.Length == 0)
@@ -35,56 +43,161 @@ public class ExcelUploadController : ControllerBase
         if (ext != ".xlsx" && ext != ".xls")
             return BadRequest(new { message = "Only .xlsx / .xls files are accepted." });
 
-        var records = new List<ExcelFileData>();
+        _logger.LogInformation("Excel import started: {File} ({Bytes:N0} bytes)",
+            file.FileName, file.Length);
+
+        var records    = new List<ExcelFileData>();
+        var allErrors  = new List<string>();
+        var sheetStats = new List<object>();
         var uploadedAt = DateTime.UtcNow;
-        var uploadedById = CurrentUserId;
-        var originalFileName = file.FileName;
+        var uploadedBy = CurrentUserId;
+        var fileName   = file.FileName;
 
-        using var stream = file.OpenReadStream();
-        using var workbook = new XLWorkbook(stream);
-
-        var sheet = workbook.Worksheets.First();
-        var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
-
-        for (int r = 2; r <= lastRow; r++)
+        try
         {
-            var row = sheet.Row(r);
-            var col1 = row.Cell(1).GetString().Trim();
-            if (string.IsNullOrWhiteSpace(col1)) continue;
+            using var stream   = file.OpenReadStream();
+            using var workbook = new XLWorkbook(stream);
 
-            records.Add(new ExcelFileData
+            var visibleSheets = workbook.Worksheets
+                .Where(ws => ws.Visibility == XLWorksheetVisibility.Visible)
+                .ToList();
+
+            _logger.LogInformation("{Count} visible sheet(s): {Names}",
+                visibleSheets.Count,
+                string.Join(", ", visibleSheets.Select(s => s.Name)));
+
+            foreach (var sheet in visibleSheets)
             {
-                ComplianceOfficerName    = col1,
-                BranchName               = row.Cell(2).GetString().Trim(),
-                BranchCode               = row.Cell(3).GetString().Trim(),
-                AuditTeamLeader          = row.Cell(4).GetString().Trim(),
-                SlNo                     = row.Cell(5).GetString().Trim(),
-                NameOfCustomer           = row.Cell(6).GetString().Trim(),
-                DetailsOfIrregularities  = row.Cell(7).GetString().Trim(),
-                AuditBaseDate            = row.Cell(8).GetString().Trim(),
-                Year                     = row.Cell(9).GetString().Trim(),
-                LapsesOriginated         = row.Cell(10).GetString().Trim(),
-                Area                     = row.Cell(11).GetString().Trim(),
-                Category                 = row.Cell(12).GetString().Trim(),
-                RiskRating               = row.Cell(13).GetString().Trim(),
-                LapsesType               = row.Cell(14).GetString().Trim(),
-                NoOfInstances            = row.Cell(15).GetString().Trim(),
-                ComplianceStatus         = row.Cell(16).GetString().Trim(),
-                OriginalFileName         = originalFileName,
-                UploadedById             = uploadedById,
-                UploadedAt               = uploadedAt
-            });
+                // RowsUsed() is reliable — unlike LastRowUsed() it doesn't
+                // undercount on certain file formats.
+                var allRows  = sheet.RowsUsed().ToList();
+                var dataRows = allRows.Skip(1).ToList(); // row 0 = header
+
+                _logger.LogInformation("  Sheet '{Sheet}': {Header} header + {Data} data rows",
+                    sheet.Name, 1, dataRows.Count);
+
+                if (dataRows.Count == 0)
+                {
+                    _logger.LogInformation("  Sheet '{Sheet}' skipped — no data rows.", sheet.Name);
+                    continue;
+                }
+
+                int imported = 0, skipped = 0;
+                var sheetErrors = new List<string>();
+
+                foreach (var row in dataRows)
+                {
+                    int rowNum = row.RowNumber();
+                    try
+                    {
+                        var c1  = SafeString(row.Cell(1));  // ComplianceOfficerName
+                        var c2  = SafeString(row.Cell(2));  // BranchName
+                        var c3  = SafeString(row.Cell(3));  // BranchCode
+                        var c5  = SafeString(row.Cell(5));  // SlNo
+
+                        // Skip only when ALL anchor columns are blank
+                        if (string.IsNullOrWhiteSpace(c1) &&
+                            string.IsNullOrWhiteSpace(c2) &&
+                            string.IsNullOrWhiteSpace(c3) &&
+                            string.IsNullOrWhiteSpace(c5))
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        records.Add(new ExcelFileData
+                        {
+                            ComplianceOfficerName   = c1,
+                            BranchName              = c2,
+                            BranchCode              = c3,
+                            AuditTeamLeader         = SafeString(row.Cell(4)),
+                            SlNo                    = c5,
+                            NameOfCustomer          = SafeString(row.Cell(6)),
+                            DetailsOfIrregularities = SafeString(row.Cell(7)),
+                            AuditBaseDate           = SafeString(row.Cell(8)),
+                            Year                    = SafeString(row.Cell(9)),
+                            LapsesOriginated        = SafeString(row.Cell(10)),
+                            Area                    = SafeString(row.Cell(11)),
+                            Category                = SafeString(row.Cell(12)),
+                            RiskRating              = SafeString(row.Cell(13)),
+                            LapsesType              = SafeString(row.Cell(14)),
+                            NoOfInstances           = SafeString(row.Cell(15)),
+                            ComplianceStatus        = SafeString(row.Cell(16)),
+                            OriginalFileName        = fileName,
+                            UploadedById            = uploadedBy,
+                            UploadedAt              = uploadedAt
+                        });
+                        imported++;
+                    }
+                    catch (Exception ex)
+                    {
+                        var msg = $"[{sheet.Name}] Row {rowNum}: {ex.Message}";
+                        sheetErrors.Add(msg);
+                        _logger.LogWarning("[{Sheet}] Row {RowNum}: {Error}",
+                            sheet.Name, rowNum, ex.Message);
+                        skipped++;
+                    }
+                }
+
+                _logger.LogInformation(
+                    "  Sheet '{Sheet}' done — imported={Imp}, skipped={Skp}, errors={Err}",
+                    sheet.Name, imported, skipped, sheetErrors.Count);
+
+                sheetStats.Add(new
+                {
+                    sheetName    = sheet.Name,
+                    totalRows    = dataRows.Count,
+                    imported,
+                    skipped,
+                    errors       = sheetErrors.Count
+                });
+
+                // Keep at most 20 per-sheet errors in the response
+                allErrors.AddRange(sheetErrors.Take(20));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse file '{File}'", fileName);
+            return BadRequest(new { message = $"Cannot read Excel file: {ex.Message}" });
         }
 
+        _logger.LogInformation("Grand total: {Total} records ready for insert, {Err} row errors",
+            records.Count, allErrors.Count);
+
         if (records.Count == 0)
-            return BadRequest(new { message = "No data rows found in the file." });
+            return BadRequest(new
+            {
+                message = "No valid data rows found in the file.",
+                sheetStats,
+                rowErrors = allErrors.Take(50)
+            });
 
-        await _db.ExcelFileData.AddRangeAsync(records);
-        await _db.SaveChangesAsync();
+        // Batch insert — 1 000 rows per SaveChanges to balance memory + speed
+        const int batch = 1_000;
+        for (int i = 0; i < records.Count; i += batch)
+        {
+            var slice = records.GetRange(i, Math.Min(batch, records.Count - i));
+            await _db.ExcelFileData.AddRangeAsync(slice);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("DB insert batch {B}/{Total}", i / batch + 1,
+                (int)Math.Ceiling((double)records.Count / batch));
+        }
 
-        return Ok(new { imported = records.Count, fileName = originalFileName });
+        return Ok(new
+        {
+            imported        = records.Count,
+            fileName,
+            sheetsProcessed = sheetStats.Count,
+            skippedRows     = allErrors.Count,
+            sheetStats,
+            rowErrors       = allErrors.Take(50).ToList()
+        });
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // GET /api/excel-upload
+    // ──────────────────────────────────────────────────────────────
     [HttpGet]
     public IActionResult GetSummary()
     {
@@ -103,6 +216,9 @@ public class ExcelUploadController : ControllerBase
         return Ok(summary);
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // POST /api/excel-upload/reconcile
+    // ──────────────────────────────────────────────────────────────
     [HttpPost("reconcile")]
     public async Task<IActionResult> Reconcile()
     {
@@ -111,87 +227,62 @@ public class ExcelUploadController : ControllerBase
         var rows = await _db.ExcelFileData
             .Where(x => !x.IsReconciled)
             .ToListAsync();
-        var groupedByBranchCode = await _db.ExcelFileData
-            .Where(x => !x.IsReconciled)
-            .GroupBy(x => x.BranchCode)
-            .Select(g => new {
-                BranchCode = g.Key,
-                BranchName = g.First().BranchName,
-                ComplianceOfficerName = g.First().ComplianceOfficerName
-            })
-            .ToListAsync();
 
         if (rows.Count == 0)
             return Ok(new { message = "No unreconciled rows found.", result });
 
-        var users    = await _db.Users.ToListAsync();
-        var branches = await _db.Branches.ToListAsync();
+        var users     = await _db.Users.ToListAsync();
+        var branches  = await _db.Branches.ToListAsync();
         var employees = await _db.ICCDEmployees.ToListAsync();
-
-
 
         var existingAssignments = await _db.UserBranchAssignments.ToListAsync();
         var existingReports     = await _db.ComplianceAuditReports.ToListAsync();
-
-        //var userBranchAssignments = groupedByBranchCode.Select(branch => new UserBranchAssignment
-        //{
-        //    // You need to get UserId from ComplianceOfficerName or another source
-        //    UserId = GetUserIdFromOfficerName(users, branch.ComplianceOfficerName), // Implement this
-        //    BranchId = int.Parse(branch.BranchCode), // Implement this
-        //}).ToList();
 
         foreach (var row in rows)
         {
             try
             {
-                // --- resolve officer ---
+                // resolve officer
                 var officerName = ExtractNameBeforeComma(row.ComplianceOfficerName);
                 var officer = FindUser(users, officerName);
                 if (officer is null)
                 {
-                    result.Errors.Add($"Row {row.Id}: officer '{officerName}' not found in Users.");
+                    result.Errors.Add($"Row {row.Id}: officer '{officerName}' not found.");
                     continue;
                 }
 
-                // --- resolve branch ---
+                // resolve branch
                 var branch = branches.FirstOrDefault(b =>
                 {
-                    // Try to parse both as integers for numeric comparison
-                    if (int.TryParse(b.BranchCode, out int branchCodeNum) &&
-                        int.TryParse(row.BranchCode, out int rowBranchCodeNum))
-                    {
-                        return branchCodeNum == rowBranchCodeNum;
-                    }
-                    // Fallback to string comparison
+                    if (int.TryParse(b.BranchCode, out int bNum) &&
+                        int.TryParse(row.BranchCode, out int rNum))
+                        return bNum == rNum;
                     return b.BranchCode.Equals(row.BranchCode, StringComparison.OrdinalIgnoreCase);
                 });
-
                 if (branch is null)
                 {
                     result.Errors.Add($"Row {row.Id}: branch code '{row.BranchCode}' not found.");
                     continue;
                 }
 
-                // --- resolve team lead ---
+                // resolve team lead
                 var leadName = ExtractNameBeforeComma(row.AuditTeamLeader);
                 var lead = FindEmployee(employees, leadName);
                 if (lead is null)
                 {
-                    result.Errors.Add($"Row {row.Id}: team lead '{leadName}' not found in ICCDEmployees.");
+                    result.Errors.Add($"Row {row.Id}: team lead '{leadName}' not found.");
                     continue;
                 }
 
-                // --- parse year ---
+                // parse year
                 if (!int.TryParse(row.Year, out var year))
                 {
                     result.Errors.Add($"Row {row.Id}: cannot parse year '{row.Year}'.");
                     continue;
                 }
 
-                // --- UserBranchAssignment ---
-                var hasAssignment = existingAssignments.Any(a =>
-                    a.UserId == officer.Id && a.BranchId == branch.Id);
-                if (!hasAssignment)
+                // UserBranchAssignment
+                if (!existingAssignments.Any(a => a.UserId == officer.Id && a.BranchId == branch.Id))
                 {
                     var assignment = new UserBranchAssignment
                     {
@@ -203,7 +294,7 @@ public class ExcelUploadController : ControllerBase
                     result.AssignmentsCreated++;
                 }
 
-                // --- ComplianceAuditReport ---
+                // ComplianceAuditReport
                 var report = existingReports.FirstOrDefault(r =>
                     r.BranchId == branch.Id && r.Year == year);
                 if (report is null)
@@ -217,29 +308,25 @@ public class ExcelUploadController : ControllerBase
                         CreatedAt       = DateTime.UtcNow
                     };
                     _db.ComplianceAuditReports.Add(report);
-                    await _db.SaveChangesAsync(); // flush to get the Id
+                    await _db.SaveChangesAsync();
                     existingReports.Add(report);
                     result.ReportsCreated++;
                 }
 
-                // --- parse fields ---
+                // AuditFinding
                 DateTime? auditBaseDate = null;
                 if (!string.IsNullOrWhiteSpace(row.AuditBaseDate))
                 {
-                    var datePart = row.AuditBaseDate.Split(' ')[0]; // Gets "31/08/2024"
-
+                    var datePart = row.AuditBaseDate.Split(' ')[0];
                     if (DateTime.TryParseExact(datePart, "dd/MM/yyyy",
-                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
-                    {
-                        auditBaseDate = parsedDate; // Already only date
-                    }
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        auditBaseDate = d;
                 }
 
-                if (!Enum.TryParse<RiskRating>(row.RiskRating, ignoreCase: true, out var riskRating))
-                    riskRating = RiskRating.Low;
+                if (!Enum.TryParse<RiskRating>(row.RiskRating, ignoreCase: true, out var risk))
+                    risk = RiskRating.Low;
 
-                // --- AuditFinding ---
-                var finding = new AuditFinding
+                _db.AuditFindings.Add(new AuditFinding
                 {
                     ComplianceAuditReportId = report.Id,
                     BranchId                = branch.Id,
@@ -250,7 +337,7 @@ public class ExcelUploadController : ControllerBase
                     FindingDetails          = row.DetailsOfIrregularities,
                     LapsesOriginated        = row.LapsesOriginated,
                     Category                = row.Category,
-                    RiskRating              = riskRating,
+                    RiskRating              = risk,
                     ComplianceStatus        = row.ComplianceStatus,
                     LapsesType              = row.LapsesType,
                     NoOfInstances           = row.NoOfInstances,
@@ -258,10 +345,8 @@ public class ExcelUploadController : ControllerBase
                     Year                    = year,
                     CreatedAt               = DateTime.UtcNow,
                     UpdatedAt               = DateTime.UtcNow
-                };
-                _db.AuditFindings.Add(finding);
+                });
                 result.FindingsCreated++;
-
                 row.IsReconciled = true;
                 result.RowsReconciled++;
             }
@@ -275,19 +360,47 @@ public class ExcelUploadController : ControllerBase
         return Ok(result);
     }
 
-    // Extract the name portion before the first comma, trimmed.
+    // ──────────────────────────────────────────────────────────────
+    // Helpers
+    // ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reads a cell's string value robustly, handling merged cells and
+    /// all cell types (text, numeric, date, boolean, formula).
+    /// </summary>
+    private static string SafeString(IXLCell cell)
+    {
+        try
+        {
+            // Merged cells: only the top-left cell holds the value
+            if (cell.IsMerged())
+            {
+                var first = cell.MergedRange()?.FirstCell();
+                if (first != null && first.Address.RowNumber != cell.Address.RowNumber
+                                  || first?.Address.ColumnNumber != cell.Address.ColumnNumber)
+                    return SafeString(first!);
+            }
+
+            return cell.GetString()?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            // Last-resort fallback for exotic cell types
+            try { return cell.Value.ToString()?.Trim() ?? string.Empty; }
+            catch { return string.Empty; }
+        }
+    }
+
     private static string ExtractNameBeforeComma(string raw)
     {
         var idx = raw.IndexOf(',');
         return (idx > 0 ? raw[..idx] : raw).Trim();
     }
 
-    // Case-insensitive exact match on FullName.
     private static User? FindUser(List<User> users, string name) =>
         users.FirstOrDefault(u =>
             u.FullName.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    // Strip common honorific prefixes before comparing ICCDEmployee.Name.
     private static ICCDEmployee? FindEmployee(List<ICCDEmployee> employees, string name)
     {
         static string Strip(string n)
@@ -297,17 +410,11 @@ public class ExcelUploadController : ControllerBase
                     return n[p.Length..].Trim();
             return n.Trim();
         }
-
         var normalized = Strip(name);
-
-        // exact match after stripping prefix
         return employees.FirstOrDefault(e =>
             Strip(e.Name).Equals(normalized, StringComparison.OrdinalIgnoreCase))
-            // fallback: contains
             ?? employees.FirstOrDefault(e =>
                 Strip(e.Name).Contains(normalized, StringComparison.OrdinalIgnoreCase)
                 || normalized.Contains(Strip(e.Name), StringComparison.OrdinalIgnoreCase));
     }
-
-    
 }
