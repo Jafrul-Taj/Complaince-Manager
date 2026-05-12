@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -8,68 +8,59 @@ import { forkJoin } from 'rxjs';
 import { DashboardService, FilterParams } from '../../core/services/dashboard.service';
 import { BranchService } from '../../core/services/branch.service';
 import { Branch } from '../../core/models/branch.model';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule, FormsModule, MatProgressSpinnerModule,
-    MatTabsModule, NgApexchartsModule
-  ],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatTabsModule, NgApexchartsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit {
-  private dashSvc = inject(DashboardService);
+  private dashSvc   = inject(DashboardService);
   private branchSvc = inject(BranchService);
 
-  years = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
+  // ── Reference data ──────────────────────────────────────────────
+  yearOptions   = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
+  riskOptions   = ['High', 'Medium', 'Low'];
+  statusOptions = ['Rectified', 'Unrectified'];
   branches: Branch[] = [];
   officers: any[] = [];
   areas: string[] = [];
 
-  filters = {
-    year: new Date().getFullYear(),
-    branchId: 0,
-    area: '',
-    riskRating: '',
-    complianceStatus: '',
-    officerId: 0
+  // ── Multi-select state (empty array = "All") ─────────────────────
+  sel = {
+    years:      [] as number[],
+    branchIds:  [] as number[],
+    areas:      [] as string[],
+    risks:      [] as string[],
+    statuses:   [] as string[],
+    officerIds: [] as number[]
   };
 
-  branchSearch = '';
+  // ── Dropdown open state ──────────────────────────────────────────
+  dropOpen: Record<string, boolean> = {
+    year: false, branch: false, area: false, risk: false, status: false, officer: false
+  };
+
+  // ── Search text for searchable dropdowns ─────────────────────────
+  dropSearch: Record<string, string> = { branch: '', area: '', officer: '' };
+
+  // ── Table search ─────────────────────────────────────────────────
+  branchSearch   = '';
   categorySearch = '';
 
-  loading = false;
-  kpis: any = null;
-
+  // ── Data ─────────────────────────────────────────────────────────
+  loading        = false;
+  kpis: any      = null;
   riskChart: any = {};
-  statusChart: any = {};
-  trendChart: any = {};
-  branchChart: any = {};
-  yearChart: any = {};
-  officerChart: any = {};
-
-  branchSummary: any[] = [];
-  officerSummary: any[] = [];
-  yearComparison: any[] = [];
-  areaBreakdown: any[] = [];
+  branchSummary:     any[] = [];
+  officerSummary:    any[] = [];
+  yearComparison:    any[] = [];
+  areaBreakdown:     any[] = [];
   categoryBreakdown: any[] = [];
-  exportData: any[] = [];
 
-  get filterParams(): FilterParams {
-    return {
-      year: this.filters.year || null,
-      branchId: this.filters.branchId || null,
-      area: this.filters.area || null,
-      riskRating: this.filters.riskRating || null,
-      complianceStatus: this.filters.complianceStatus || null,
-      officerId: this.filters.officerId || null
-    };
-  }
-
+  // ── Filtered getters ─────────────────────────────────────────────
   get filteredBranchSummary(): any[] {
     if (!this.branchSearch.trim()) return this.branchSummary;
     const s = this.branchSearch.toLowerCase();
@@ -82,6 +73,113 @@ export class DashboardComponent implements OnInit {
     return this.categoryBreakdown.filter(c => c.category.toLowerCase().includes(s));
   }
 
+  // ── Dropdown labels ──────────────────────────────────────────────
+  get yearLabel(): string {
+    if (!this.sel.years.length) return 'All Years';
+    return this.joinLabels(this.sel.years.map(String), 3);
+  }
+
+  get branchLabel(): string {
+    if (!this.sel.branchIds.length) return 'All Branches';
+    const names = this.sel.branchIds.map(id =>
+      this.branches.find(b => b.id === id)?.branchName ?? String(id));
+    return this.joinLabels(names, 2);
+  }
+
+  get areaLabel(): string {
+    if (!this.sel.areas.length) return 'All Areas';
+    return this.joinLabels(this.sel.areas, 2);
+  }
+
+  get riskLabel(): string {
+    if (!this.sel.risks.length) return 'All Risks';
+    return this.joinLabels(this.sel.risks, 3);
+  }
+
+  get statusLabel(): string {
+    if (!this.sel.statuses.length) return 'All Status';
+    return this.joinLabels(this.sel.statuses, 2);
+  }
+
+  get officerLabel(): string {
+    if (!this.sel.officerIds.length) return 'All Officers';
+    const names = this.sel.officerIds.map(id =>
+      this.officers.find(o => o.officerId === id)?.officerName ?? String(id));
+    return this.joinLabels(names, 2);
+  }
+
+  private joinLabels(labels: string[], maxShow: number): string {
+    if (labels.length <= maxShow) return labels.join(', ');
+    return labels.slice(0, maxShow).join(', ') + ` +${labels.length - maxShow} more`;
+  }
+
+  // ── All-IDs getters for Select All (arrow fns not allowed in templates) ──
+  get allBranchIds():  number[] { return this.branches.map(b => b.id); }
+  get allOfficerIds(): number[] { return this.officers.map(o => o.officerId); }
+
+  // ── Filtered dropdown lists ──────────────────────────────────────
+  get filteredBranches(): Branch[] {
+    const s = this.dropSearch['branch'].toLowerCase();
+    return s ? this.branches.filter(b =>
+      b.branchName.toLowerCase().includes(s) || b.branchCode?.toLowerCase().includes(s)
+    ) : this.branches;
+  }
+
+  get filteredAreas(): string[] {
+    const s = this.dropSearch['area'].toLowerCase();
+    return s ? this.areas.filter(a => a.toLowerCase().includes(s)) : this.areas;
+  }
+
+  get filteredOfficers(): any[] {
+    const s = this.dropSearch['officer'].toLowerCase();
+    return s ? this.officers.filter(o => o.officerName.toLowerCase().includes(s)) : this.officers;
+  }
+
+  // ── Close dropdowns on outside click ────────────────────────────
+  @HostListener('document:click')
+  onDocClick() {
+    Object.keys(this.dropOpen).forEach(k => this.dropOpen[k] = false);
+  }
+
+  toggleDrop(key: string, e: MouseEvent) {
+    e.stopPropagation();
+    const wasOpen = this.dropOpen[key];
+    Object.keys(this.dropOpen).forEach(k => this.dropOpen[k] = false);
+    this.dropOpen[key] = !wasOpen;
+  }
+
+  stopProp(e: MouseEvent) { e.stopPropagation(); }
+
+  // ── Toggle helpers ───────────────────────────────────────────────
+  toggleItem<T>(arr: T[], item: T) {
+    const idx = arr.indexOf(item);
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(item);
+  }
+
+  isSelected<T>(arr: T[], item: T): boolean { return arr.includes(item); }
+
+  toggleAll<T>(arr: T[], all: T[]) {
+    if (arr.length === all.length) { arr.splice(0); }
+    else { arr.splice(0); arr.push(...all); }
+  }
+
+  isAllSelected<T>(arr: T[], all: T[]): boolean {
+    return arr.length === all.length;
+  }
+
+  // ── FilterParams getter ──────────────────────────────────────────
+  get filterParams(): FilterParams {
+    return {
+      years:       this.sel.years.length      ? [...this.sel.years]      : undefined,
+      branchIds:   this.sel.branchIds.length  ? [...this.sel.branchIds]  : undefined,
+      areas:       this.sel.areas.length      ? [...this.sel.areas]      : undefined,
+      riskRatings: this.sel.risks.length      ? [...this.sel.risks]      : undefined,
+      statuses:    this.sel.statuses.length   ? [...this.sel.statuses]   : undefined,
+      officerIds:  this.sel.officerIds.length ? [...this.sel.officerIds] : undefined
+    };
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────────────
   ngOnInit() {
     this.branchSvc.getAll().subscribe(b => this.branches = b);
     this.dashSvc.getOfficers().subscribe(o => this.officers = o);
@@ -91,45 +189,40 @@ export class DashboardComponent implements OnInit {
     this.loadAll();
   }
 
-  applyFilters() { this.loadAll(); }
+  applyFilters() {
+    Object.keys(this.dropOpen).forEach(k => this.dropOpen[k] = false);
+    this.loadAll();
+  }
 
   resetFilters() {
-    this.filters = { year: new Date().getFullYear(), branchId: 0, area: '', riskRating: '', complianceStatus: '', officerId: 0 };
-    this.branchSearch = '';
+    this.sel        = { years: [], branchIds: [], areas: [], risks: [], statuses: [], officerIds: [] };
+    this.branchSearch   = '';
     this.categorySearch = '';
+    Object.keys(this.dropSearch).forEach(k => this.dropSearch[k] = '');
     this.loadAll();
   }
 
   loadAll() {
     this.loading = true;
     const fp = this.filterParams;
-
+    console.log('Loading with filters:', fp);
     forkJoin({
       kpis:     this.dashSvc.getKpis(fp),
       risk:     this.dashSvc.getRiskDistribution(fp),
-      status:   this.dashSvc.getStatusBreakdown(fp),
-      trend:    this.dashSvc.getMonthlyTrend(fp),
       branch:   this.dashSvc.getBranchSummary(fp),
       year:     this.dashSvc.getYearComparison(fp),
       officer:  this.dashSvc.getOfficerSummary(fp),
       area:     this.dashSvc.getAreaBreakdown(fp),
-      category: this.dashSvc.getCategoryBreakdown(fp, 50),
-      export:   this.dashSvc.getExportData(fp)
+      category: this.dashSvc.getCategoryBreakdown(fp, 50)
     }).subscribe({
       next: (data) => {
         this.kpis = data.kpis;
         this.buildRiskChart(data.risk ?? []);
-        this.buildStatusChart(data.status ?? []);
-        this.buildTrendChart(data.trend ?? []);
-        this.buildBranchChart(data.branch ?? []);
-        this.buildYearChart(data.year ?? []);
-        this.buildOfficerChart(data.officer ?? []);
-        this.branchSummary  = data.branch ?? [];
-        this.officerSummary = data.officer ?? [];
-        this.yearComparison = data.year ?? [];
-        this.areaBreakdown  = data.area ?? [];
+        this.branchSummary     = data.branch  ?? [];
+        this.officerSummary    = data.officer ?? [];
+        this.yearComparison    = data.year    ?? [];
+        this.areaBreakdown     = data.area    ?? [];
         this.categoryBreakdown = data.category ?? [];
-        this.exportData     = data.export ?? [];
         this.loading = false;
       },
       error: () => { this.loading = false; }
@@ -137,154 +230,28 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildRiskChart(data: any[]) {
-    const order = ['High', 'Medium', 'Low'];
+    const order  = ['High', 'Medium', 'Low'];
     const sorted = order.map(r => data.find((d: any) => d.riskRating === r)).filter(Boolean);
-    if (!sorted.length) { this.riskChart = this.emptyDonut(); return; }
+    if (!sorted.length) {
+      this.riskChart = {
+        series: [1], chart: { type: 'donut', width: '100%', height: 260 },
+        labels: ['No Data'], colors: ['#e5e7eb'],
+        dataLabels: { enabled: false }, legend: { show: false }
+      };
+      return;
+    }
     this.riskChart = {
-      series: sorted.map((d: any) => d.count),
-      chart: { type: 'donut', height: 260, toolbar: { show: false } },
-      labels: sorted.map((d: any) => d.riskRating),
-      colors: ['#dc2626', '#d97706', '#16a34a'],
-      legend: { position: 'bottom', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
-      plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Total', color: '#374151', fontFamily: 'Inter, sans-serif' } } } } },
-      dataLabels: { enabled: true, formatter: (val: number) => val.toFixed(1) + '%', style: { fontSize: '11px' } },
-      responsive: [{ breakpoint: 480, options: { chart: { height: 220 } } }]
+      series:  sorted.map((d: any) => d.count),
+      chart:   { type: 'donut', width: '100%', height: 260, toolbar: { show: false } },
+      labels:  sorted.map((d: any) => d.riskRating),
+      colors:  ['#dc2626', '#d97706', '#16a34a'],
+      legend:  { position: 'bottom', fontSize: '12px', fontFamily: 'Inter, sans-serif', markers: { width: 10, height: 10 } },
+      plotOptions: { pie: { donut: { size: '68%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '12px', color: '#374151', fontFamily: 'Inter, sans-serif' } } } } },
+      dataLabels: { enabled: true, formatter: (val: number) => val.toFixed(1) + '%', style: { fontSize: '12px' } }
     };
-  }
-
-  private buildStatusChart(data: any[]) {
-    const colorMap: Record<string, string> = { Rectified: '#059669', Unrectified: '#dc2626', 'Partially Rectified': '#d97706' };
-    const labelMap: Record<string, string> = { Rectified: 'Rectified', Unrectified: 'Unrectified', 'Partially Rectified': 'Partial' };
-    if (!data.length) { this.statusChart = this.emptyBar(); return; }
-    this.statusChart = {
-      series: [{ name: 'Findings', data: data.map((d: any) => d.count) }],
-      chart: { type: 'bar', height: 260, toolbar: { show: false } },
-      xaxis: { categories: data.map((d: any) => labelMap[d.status] ?? d.status), labels: { style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' } } },
-      colors: data.map((d: any) => colorMap[d.status] ?? '#6b7280'),
-      plotOptions: { bar: { borderRadius: 5, columnWidth: '50%', distributed: true } },
-      dataLabels: { enabled: true, style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' } },
-      legend: { show: false }
-    };
-  }
-
-  private buildTrendChart(data: any[]) {
-    this.trendChart = {
-      series: [{ name: 'New Findings', data: data.map((d: any) => d.count) }],
-      chart: { type: 'area', height: 230, toolbar: { show: false } },
-      xaxis: { categories: data.map((d: any) => d.month), labels: { style: { fontSize: '11px', fontFamily: 'Inter, sans-serif' } } },
-      yaxis: { labels: { style: { fontSize: '11px' } } },
-      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 } },
-      stroke: { curve: 'smooth', width: 2.5 },
-      markers: { size: 4, hover: { size: 6 } },
-      colors: ['#c62828'],
-      dataLabels: { enabled: false },
-      tooltip: { y: { formatter: (v: number) => v + ' findings' } },
-      grid: { borderColor: '#f0f0f0' }
-    };
-  }
-
-  private buildBranchChart(data: any[]) {
-    const top10 = data.slice(0, 10);
-    if (!top10.length) { this.branchChart = this.emptyBar(); return; }
-    this.branchChart = {
-      series: [
-        { name: 'High',   data: top10.map((d: any) => d.highCount) },
-        { name: 'Medium', data: top10.map((d: any) => d.mediumCount) },
-        { name: 'Low',    data: top10.map((d: any) => d.lowCount) }
-      ],
-      chart: { type: 'bar', height: 300, stacked: true, toolbar: { show: false } },
-      xaxis: { categories: top10.map((d: any) => d.branchName), labels: { style: { fontSize: '10px', fontFamily: 'Inter, sans-serif' } } },
-      colors: ['#dc2626', '#d97706', '#16a34a'],
-      plotOptions: { bar: { horizontal: true, barHeight: '65%' } },
-      dataLabels: { enabled: false },
-      legend: { position: 'top', fontSize: '11px', fontFamily: 'Inter, sans-serif' },
-      grid: { borderColor: '#f0f0f0' }
-    };
-  }
-
-  private buildYearChart(data: any[]) {
-    if (!data.length) { this.yearChart = this.emptyBar(); return; }
-    this.yearChart = {
-      series: [
-        { name: 'Total',     data: data.map((d: any) => d.totalFindings) },
-        { name: 'Rectified', data: data.map((d: any) => d.rectifiedCount) }
-      ],
-      chart: { type: 'bar', height: 250, toolbar: { show: false } },
-      xaxis: { categories: data.map((d: any) => d.year.toString()), labels: { style: { fontSize: '11px', fontFamily: 'Inter, sans-serif' } } },
-      colors: ['#c62828', '#059669'],
-      plotOptions: { bar: { borderRadius: 4, columnWidth: '60%', grouped: true } },
-      dataLabels: { enabled: false },
-      legend: { position: 'top', fontSize: '11px', fontFamily: 'Inter, sans-serif' },
-      grid: { borderColor: '#f0f0f0' }
-    };
-  }
-
-  private buildOfficerChart(data: any[]) {
-    const top8 = data.slice(0, 8);
-    if (!top8.length) { this.officerChart = this.emptyBar(); return; }
-    this.officerChart = {
-      series: [{ name: 'Findings', data: top8.map((d: any) => d.totalFindings) }],
-      chart: { type: 'bar', height: 250, toolbar: { show: false } },
-      xaxis: {
-        categories: top8.map((d: any) => {
-          const parts = d.officerName.split(' ');
-          return parts.length > 1 ? parts[0] + ' ' + parts[parts.length - 1] : d.officerName;
-        }),
-        labels: { style: { fontSize: '10px', fontFamily: 'Inter, sans-serif' } }
-      },
-      colors: ['#008080'],
-      plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
-      dataLabels: { enabled: true, style: { fontSize: '10px', fontFamily: 'Inter, sans-serif' } },
-      legend: { show: false },
-      grid: { borderColor: '#f0f0f0' }
-    };
-  }
-
-  private emptyDonut() {
-    return { series: [1], chart: { type: 'donut', height: 260 }, labels: ['No Data'], colors: ['#e5e7eb'], dataLabels: { enabled: false }, legend: { show: false } };
-  }
-
-  private emptyBar() {
-    return { series: [{ name: '', data: [0] }], chart: { type: 'bar', height: 250, toolbar: { show: false } }, xaxis: { categories: ['No Data'] }, colors: ['#e5e7eb'], dataLabels: { enabled: false } };
   }
 
   riskClass(r: string): string {
     return ({ High: 'pill-high', Medium: 'pill-medium', Low: 'pill-low' } as any)[r] ?? '';
-  }
-
-  statusClass(s: string): string {
-    if (s === 'Rectified') return 'status-green';
-    if (s === 'Unrectified') return 'status-red';
-    return 'status-amber';
-  }
-
-  exportExcel() {
-    if (!this.exportData.length) return;
-    const rows = this.exportData.map((f: any) => ({
-      'Sl.No': f.slNo,
-      'Branch': f.branchName,
-      'Branch Code': f.branchCode,
-      'Finding Area': f.findingArea,
-      'Finding Details': f.findingDetails,
-      'Risk Rating': f.riskRating,
-      'No. of Instances': f.noOfInstances,
-      'Compliance Status': f.complianceStatus,
-      'Rectification Remarks': f.rectificationRemarks ?? '',
-      'Rectified At': f.rectifiedAt ? new Date(f.rectifiedAt).toLocaleDateString() : '',
-      'Assigned Officer': f.officerName,
-      'Year': f.year,
-      'Created At': new Date(f.createdAt).toLocaleDateString()
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [
-      { wch: 8 }, { wch: 22 }, { wch: 12 }, { wch: 20 }, { wch: 45 },
-      { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 35 }, { wch: 15 },
-      { wch: 22 }, { wch: 6 }, { wch: 15 }
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Audit_${this.filters.year || 'All'}`);
-    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `AuditFindings_${this.filters.year || 'All'}.xlsx`);
   }
 }

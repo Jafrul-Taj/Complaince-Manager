@@ -15,65 +15,66 @@ public class DashboardService : IDashboardService
     public DashboardService(AppDbContext db) => _db = db;
 
     private IQueryable<AuditFinding> BuildQuery(
-        int? year, int? branchId = null, string? area = null,
-        string? riskRating = null, int? officerId = null, string? complianceStatus = null)
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, int[]? officerIds = null, string[]? statuses = null)
     {
         var q = _db.AuditFindings.AsQueryable();
-        if (year.HasValue && year.Value > 0)
-            q = q.Where(f => f.Year == year.Value);
-        if (branchId.HasValue)
-            q = q.Where(f => f.BranchId == branchId.Value);
-        if (!string.IsNullOrWhiteSpace(area))
-            q = q.Where(f => f.FindingArea == area);
-        if (!string.IsNullOrWhiteSpace(riskRating) &&
-            Enum.TryParse<RiskRating>(riskRating, true, out var r))
-            q = q.Where(f => f.RiskRating == r);
-        if (officerId.HasValue)
-            q = q.Where(f => f.AssignedOfficerId == officerId.Value);
-        if (!string.IsNullOrWhiteSpace(complianceStatus))
-            q = q.Where(f => f.ComplianceStatus == complianceStatus);
+
+        if (years != null && years.Length > 0)
+            q = q.Where(f => years.Contains(f.Year));
+
+        if (branchIds != null && branchIds.Length > 0)
+            q = q.Where(f => branchIds.Contains(f.BranchId));
+
+        if (areas != null && areas.Length > 0)
+            q = q.Where(f => areas.Contains(f.FindingArea));
+
+        if (riskRatings != null && riskRatings.Length > 0)
+        {
+            var parsed = riskRatings
+                .Select(r => Enum.TryParse<RiskRating>(r, true, out var v) ? (RiskRating?)v : null)
+                .Where(r => r.HasValue).Select(r => r!.Value).ToArray();
+            if (parsed.Length > 0)
+                q = q.Where(f => parsed.Contains(f.RiskRating));
+        }
+
+        if (officerIds != null && officerIds.Length > 0)
+            q = q.Where(f => officerIds.Contains(f.AssignedOfficerId));
+
+        if (statuses != null && statuses.Length > 0)
+            q = q.Where(f => statuses.Contains(f.ComplianceStatus));
+
         return q;
     }
 
-    public async Task<KpiDto> GetKpisAsync(int? year, int? branchId = null, string? area = null, string? riskRating = null, int? officerId = null, string? complianceStatus = null)
+    public async Task<KpiDto> GetKpisAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, int[]? officerIds = null, string[]? statuses = null)
     {
-        var findings = await BuildQuery(year, branchId, area, riskRating, officerId, complianceStatus).ToListAsync();
-        var total = findings.Count;
+        var findings = await BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses).ToListAsync();
+        var total    = findings.Count;
         var rectified = findings.Count(f => f.ComplianceStatus == "Rectified");
         return new KpiDto
         {
             TotalFindings     = total,
-            CriticalCount     = findings.Count(f => f.RiskRating == RiskRating.Critical),
             HighCount         = findings.Count(f => f.RiskRating == RiskRating.High),
             MediumCount       = findings.Count(f => f.RiskRating == RiskRating.Medium),
             LowCount          = findings.Count(f => f.RiskRating == RiskRating.Low),
             RectifiedCount    = rectified,
-            PendingCount      = findings.Count(f => f.ComplianceStatus == "Unrectified"),
             RectificationRate = total > 0 ? Math.Round((double)rectified / total * 100, 1) : 0
         };
     }
 
-    public async Task<List<RiskDistributionDto>> GetRiskDistributionAsync(int? year, int? branchId = null, string? area = null, string? complianceStatus = null)
+    public async Task<List<RiskDistributionDto>> GetRiskDistributionAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? statuses = null)
     {
-        var findings = await BuildQuery(year, branchId, area, complianceStatus: complianceStatus).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, areas, statuses: statuses).ToListAsync();
         return findings
             .GroupBy(f => f.RiskRating)
             .Select(g => new RiskDistributionDto { RiskRating = g.Key.ToString(), Count = g.Count() })
             .ToList();
     }
 
-    public async Task<List<StatusBreakdownDto>> GetStatusBreakdownAsync(int? year, int? branchId = null, string? area = null)
+    public async Task<List<BranchSummaryDto>> GetBranchSummaryAsync(int[]? years = null, string[]? areas = null, string[]? statuses = null)
     {
-        var findings = await BuildQuery(year, branchId, area).ToListAsync();
-        return findings
-            .GroupBy(f => f.ComplianceStatus)
-            .Select(g => new StatusBreakdownDto { Status = g.Key, Count = g.Count() })
-            .ToList();
-    }
-
-    public async Task<List<BranchSummaryDto>> GetBranchSummaryAsync(int? year, string? area = null, string? complianceStatus = null)
-    {
-        var findings = await BuildQuery(year, area: area, complianceStatus: complianceStatus)
+        var findings = await BuildQuery(years, areas: areas, statuses: statuses)
             .Include(f => f.Branch)
             .ToListAsync();
 
@@ -89,12 +90,10 @@ public class DashboardService : IDashboardService
                     BranchName        = g.Key.BranchName,
                     BranchCode        = g.Key.BranchCode,
                     TotalFindings     = total,
-                    CriticalCount     = g.Count(f => f.RiskRating == RiskRating.Critical),
                     HighCount         = g.Count(f => f.RiskRating == RiskRating.High),
                     MediumCount       = g.Count(f => f.RiskRating == RiskRating.Medium),
                     LowCount          = g.Count(f => f.RiskRating == RiskRating.Low),
                     RectifiedCount    = rect,
-                    PendingCount      = g.Count(f => f.ComplianceStatus == "Unrectified"),
                     RectificationRate = total > 0 ? Math.Round((double)rect / total * 100, 1) : 0
                 };
             })
@@ -102,25 +101,9 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<object>> GetMonthlyTrendAsync(int? year, int? branchId = null, string? area = null, string? complianceStatus = null)
+    public async Task<List<AreaBreakdownDto>> GetAreaBreakdownAsync(int[]? years = null, int[]? branchIds = null, string[]? statuses = null)
     {
-        var displayYear = year ?? DateTime.Now.Year;
-        var findings = await BuildQuery(year, branchId, area, complianceStatus: complianceStatus)
-            .Where(f => f.Year == displayYear)
-            .GroupBy(f => f.CreatedAt.Month)
-            .Select(g => new { Month = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        return Enumerable.Range(1, 12).Select(m => (object)new
-        {
-            Month = new DateTime(displayYear, m, 1).ToString("MMM"),
-            Count = findings.FirstOrDefault(f => f.Month == m)?.Count ?? 0
-        }).ToList();
-    }
-
-    public async Task<List<AreaBreakdownDto>> GetAreaBreakdownAsync(int? year, int? branchId = null, string? complianceStatus = null)
-    {
-        var findings = await BuildQuery(year, branchId, complianceStatus: complianceStatus).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, statuses: statuses).ToListAsync();
         return findings
             .GroupBy(f => f.FindingArea)
             .Select(g =>
@@ -131,12 +114,10 @@ public class DashboardService : IDashboardService
                 {
                     Area              = g.Key,
                     TotalFindings     = total,
-                    CriticalCount     = g.Count(f => f.RiskRating == RiskRating.Critical),
                     HighCount         = g.Count(f => f.RiskRating == RiskRating.High),
                     MediumCount       = g.Count(f => f.RiskRating == RiskRating.Medium),
                     LowCount          = g.Count(f => f.RiskRating == RiskRating.Low),
                     RectifiedCount    = rect,
-                    PendingCount      = g.Count(f => f.ComplianceStatus == "Unrectified"),
                     RectificationRate = total > 0 ? Math.Round((double)rect / total * 100, 1) : 0
                 };
             })
@@ -144,9 +125,9 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<CategoryBreakdownDto>> GetCategoryBreakdownAsync(int? year, int? branchId = null, string? area = null, string? riskRating = null, int top = 20, string? complianceStatus = null)
+    public async Task<List<CategoryBreakdownDto>> GetCategoryBreakdownAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, int top = 50, string[]? statuses = null)
     {
-        var findings = await BuildQuery(year, branchId, area, riskRating, complianceStatus: complianceStatus).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, areas, riskRatings, statuses: statuses).ToListAsync();
         return findings
             .GroupBy(f => f.Category)
             .Select(g =>
@@ -158,7 +139,6 @@ public class DashboardService : IDashboardService
                     Category          = g.Key,
                     Count             = total,
                     RectifiedCount    = rect,
-                    PendingCount      = g.Count(f => f.ComplianceStatus == "Unrectified"),
                     RectificationRate = total > 0 ? Math.Round((double)rect / total * 100, 1) : 0
                 };
             })
@@ -167,9 +147,9 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<OfficerSummaryDto>> GetOfficerSummaryAsync(int? year, int? branchId = null, string? area = null, string? complianceStatus = null)
+    public async Task<List<OfficerSummaryDto>> GetOfficerSummaryAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? statuses = null)
     {
-        var findings = await BuildQuery(year, branchId, area, complianceStatus: complianceStatus)
+        var findings = await BuildQuery(years, branchIds, areas, statuses: statuses)
             .Include(f => f.AssignedOfficer)
             .ToListAsync();
 
@@ -195,9 +175,9 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<YearComparisonDto>> GetYearComparisonAsync(int? branchId = null, string? area = null)
+    public async Task<List<YearComparisonDto>> GetYearComparisonAsync(int[]? branchIds = null, string[]? areas = null)
     {
-        var findings = await BuildQuery(null, branchId, area).ToListAsync();
+        var findings = await BuildQuery(branchIds: branchIds, areas: areas).ToListAsync();
         return findings
             .GroupBy(f => f.Year)
             .Select(g =>
@@ -208,7 +188,6 @@ public class DashboardService : IDashboardService
                 {
                     Year              = g.Key,
                     TotalFindings     = total,
-                    CriticalCount     = g.Count(f => f.RiskRating == RiskRating.Critical),
                     HighCount         = g.Count(f => f.RiskRating == RiskRating.High),
                     MediumCount       = g.Count(f => f.RiskRating == RiskRating.Medium),
                     LowCount          = g.Count(f => f.RiskRating == RiskRating.Low),
@@ -218,27 +197,6 @@ public class DashboardService : IDashboardService
             })
             .OrderBy(y => y.Year)
             .ToList();
-    }
-
-    public async Task<List<RecentFindingDto>> GetRecentFindingsAsync(int? year, int? branchId = null, string? area = null, int count = 10)
-    {
-        return await BuildQuery(year, branchId, area)
-            .Include(f => f.Branch)
-            .OrderByDescending(f => f.CreatedAt)
-            .Take(count)
-            .Select(f => new RecentFindingDto
-            {
-                Id               = f.Id,
-                BranchName       = f.Branch.BranchName,
-                FindingArea      = f.FindingArea,
-                Category         = f.Category,
-                RiskRating       = f.RiskRating.ToString(),
-                ComplianceStatus = f.ComplianceStatus,
-                SlNo             = f.SlNo,
-                AuditBaseDate    = f.AuditBaseDate,
-                Year             = f.Year
-            })
-            .ToListAsync();
     }
 
     public async Task<List<OfficerSummaryDto>> GetOfficerListAsync()
@@ -254,9 +212,9 @@ public class DashboardService : IDashboardService
             .ToListAsync();
     }
 
-    public async Task<List<FindingDto>> GetExportDataAsync(int? year, int? branchId)
+    public async Task<List<FindingDto>> GetExportDataAsync(int[]? years = null, int[]? branchIds = null)
     {
-        var query = BuildQuery(year, branchId)
+        var query = BuildQuery(years, branchIds)
             .Include(f => f.Branch)
             .Include(f => f.AssignedOfficer);
 
