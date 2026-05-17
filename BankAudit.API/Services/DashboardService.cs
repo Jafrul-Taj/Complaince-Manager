@@ -265,6 +265,60 @@ public class DashboardService : IDashboardService
             .ToListAsync();
     }
 
+    // ── Findings by Filter (dashboard drilldown) ─────────────────────
+    public async Task<List<FindingDetailDto>> GetFindingsByFilterAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, int[]? officerIds = null,
+        string[]? statuses = null, string[]? lapsesType = null,
+        string? focusType = null, int? focusId = null, string? focusValue = null)
+    {
+        IQueryable<AuditFinding> query = BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses, lapsesType)
+            .Include(f => f.Branch)
+            .Include(f => f.AssignedOfficer)
+            .Include(f => f.ComplianceAuditReport!)
+                .ThenInclude(r => r.AuditTeamLead);
+
+        if (focusType == "branch" && focusId.HasValue)
+            query = query.Where(f => f.BranchId == focusId.Value);
+        else if (focusType == "officer" && focusId.HasValue)
+            query = query.Where(f => f.AssignedOfficerId == focusId.Value);
+        else if (focusType == "year" && focusId.HasValue)
+            query = query.Where(f => f.Year == focusId.Value);
+        else if (focusType == "area" && focusValue != null)
+            query = query.Where(f => f.FindingArea == focusValue);
+        else if (focusType == "category" && focusValue != null)
+            query = query.Where(f => f.Category == focusValue);
+
+        var findings = await query
+            .OrderBy(f => f.Branch.BranchName)
+            .ThenBy(f => f.SlNo)
+            .ToListAsync();
+
+        return findings.Select(f => new FindingDetailDto
+        {
+            Id                   = f.Id,
+            OfficerName          = f.AssignedOfficer?.FullName ?? "",
+            OfficerId            = f.AssignedOfficerId,
+            BranchName           = f.Branch?.BranchName ?? "",
+            BranchCode           = f.Branch?.BranchCode ?? "",
+            AuditLeaderName      = f.ComplianceAuditReport?.AuditTeamLead?.Name ?? "",
+            Year                 = f.Year,
+            NameOfCustomers      = f.NameOfCustomers,
+            FindingDetails       = f.FindingDetails,
+            AuditBaseDate        = f.AuditBaseDate,
+            LapsesOriginated     = f.LapsesOriginated,
+            FindingArea          = f.FindingArea,
+            Category             = f.Category,
+            SlNo                 = f.SlNo,
+            RiskRating           = f.RiskRating.ToString(),
+            LapsesType           = f.LapsesType,
+            NoOfInstances        = f.NoOfInstances,
+            ComplianceStatus     = f.ComplianceStatus,
+            RectifiedAt          = f.RectifiedAt,
+            RectificationRemarks = f.RectificationRemarks ?? ""
+        }).ToList();
+    }
+
     // ── Export ───────────────────────────────────────────────────────
     public async Task<List<FindingDto>> GetExportDataAsync(
         int[]? years = null, int[]? branchIds = null, string[]? areas = null,

@@ -318,6 +318,13 @@
 .td-area-name { font-weight: 500; }
 .td-idx { text-align: center; color: #9ca3af; font-size: 11px; }
 
+/* ── Clickable rows ──────────────────────────────────────────── */
+.mini-table tbody tr.clickable-row,
+.breakdown-table tbody tr.clickable-row { cursor: pointer; }
+
+.mini-table tbody tr.clickable-row:hover td { background: #eff6ff !important; color: #1d4ed8; }
+.breakdown-table tbody tr.clickable-row:hover td { background: #eff6ff !important; color: #1d4ed8; }
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 1300px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1050px) {

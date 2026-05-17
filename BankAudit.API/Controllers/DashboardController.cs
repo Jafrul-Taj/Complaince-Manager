@@ -75,4 +75,14 @@ public class DashboardController : ControllerBase
         [FromQuery] string[]? areas, [FromQuery] string[]? riskRatings,
         [FromQuery] string[]? statuses, [FromQuery] string[]? lapsesType)
         => Ok(await _service.GetExportDataAsync(years, branchIds, areas, riskRatings, statuses, lapsesType));
+
+    [HttpGet("findings-by-filter")]
+    public async Task<IActionResult> GetFindingsByFilter(
+        [FromQuery] int[]? years, [FromQuery] int[]? branchIds,
+        [FromQuery] string[]? areas, [FromQuery] string[]? riskRatings,
+        [FromQuery] int[]? officerIds, [FromQuery] string[]? statuses,
+        [FromQuery] string[]? lapsesType,
+        [FromQuery] string? focusType, [FromQuery] int? focusId,
+        [FromQuery] string? focusValue)
+        => Ok(await _service.GetFindingsByFilterAsync(years, branchIds, areas, riskRatings, officerIds, statuses, lapsesType, focusType, focusId, focusValue));
 }

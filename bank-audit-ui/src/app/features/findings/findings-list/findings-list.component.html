@@ -21,33 +21,6 @@
   <!-- ── Summary Card ──────────────────────────────────────────── -->
   @if (totalCount > 0) {
     <div class="summary-card">
-      <div class="summary-meta">
-        @if (headerFinding?.branchName) {
-          <div class="meta-item">
-            <span class="meta-label">Branch</span>
-            <span class="meta-value">{{ headerFinding?.branchName }}<span class="meta-code">&nbsp;{{ headerFinding?.branchCode }}</span></span>
-          </div>
-        }
-        @if (headerFinding?.year) {
-          <div class="meta-item">
-            <span class="meta-label">Year</span>
-            <span class="meta-value">{{ headerFinding?.year }}</span>
-          </div>
-        }
-        @if (headerFinding?.auditLeaderName) {
-          <div class="meta-item">
-            <span class="meta-label">Audit Leader</span>
-            <span class="meta-value">{{ headerFinding?.auditLeaderName }}</span>
-          </div>
-        }
-        @if (headerFinding?.officerName) {
-          <div class="meta-item">
-            <span class="meta-label">Officer</span>
-            <span class="meta-value">{{ headerFinding?.officerName }}</span>
-          </div>
-        }
-      </div>
-
       <div class="summary-stats">
         <div class="stat-pill stat-total">
           <span class="stat-num">{{ totalCount }}</span>

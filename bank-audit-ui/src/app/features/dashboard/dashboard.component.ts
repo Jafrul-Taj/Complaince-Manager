@@ -5,6 +5,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { forkJoin } from 'rxjs';
+import { Router } from '@angular/router';
 import { DashboardService, FilterParams } from '../../core/services/dashboard.service';
 import { BranchService } from '../../core/services/branch.service';
 import { Branch } from '../../core/models/branch.model';
@@ -19,6 +20,7 @@ import { Branch } from '../../core/models/branch.model';
 export class DashboardComponent implements OnInit {
   private dashSvc   = inject(DashboardService);
   private branchSvc = inject(BranchService);
+  private router    = inject(Router);
 
   // ── Reference data ──────────────────────────────────────────────
   yearOptions        = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -261,5 +263,57 @@ export class DashboardComponent implements OnInit {
 
   riskClass(r: string): string {
     return ({ High: 'pill-high', Medium: 'pill-medium', Low: 'pill-low' } as any)[r] ?? '';
+  }
+
+  // ── Dashboard row click handlers ─────────────────────────────────
+  onBranchClick(branchId: number, branchName: string) {
+    this.router.navigate(['/app/findings-detail'], {
+      queryParams: this.buildNavParams('branch', branchId, null, branchName)
+    });
+  }
+
+  onOfficerClick(officerId: number, officerName: string) {
+    this.router.navigate(['/app/findings-detail'], {
+      queryParams: this.buildNavParams('officer', officerId, null, officerName)
+    });
+  }
+
+  onYearClick(year: number) {
+    this.router.navigate(['/app/findings-detail'], {
+      queryParams: this.buildNavParams('year', year, null, String(year))
+    });
+  }
+
+  onAreaClick(area: string) {
+    this.router.navigate(['/app/findings-detail'], {
+      queryParams: this.buildNavParams('area', null, area, area)
+    });
+  }
+
+  onCategoryClick(category: string) {
+    this.router.navigate(['/app/findings-detail'], {
+      queryParams: this.buildNavParams('category', null, category, category)
+    });
+  }
+
+  private buildNavParams(
+    focusType: string,
+    focusId: number | null,
+    focusValue: string | null,
+    focusLabel: string
+  ): Record<string, any> {
+    const p: Record<string, any> = { focusType, focusLabel };
+    if (focusId    !== null) p['focusId']    = focusId;
+    if (focusValue !== null) p['focusValue'] = focusValue;
+
+    const fp = this.filterParams;
+    if (fp.years?.length)        p['years']       = fp.years.join(',');
+    if (fp.branchIds?.length)    p['branchIds']   = fp.branchIds.join(',');
+    if (fp.areas?.length)        p['areas']       = fp.areas.join(',');
+    if (fp.riskRatings?.length)  p['riskRatings'] = fp.riskRatings.join(',');
+    if (fp.statuses?.length)     p['statuses']    = fp.statuses.join(',');
+    if (fp.officerIds?.length)   p['officerIds']  = fp.officerIds.join(',');
+    if (fp.lapsesTypes?.length)  p['lapsesTypes'] = fp.lapsesTypes.join(',');
+    return p;
   }
 }

@@ -73,6 +73,14 @@ export const routes: Routes = [
         data: { roles: ['ComplianceHead', 'Operator'] }
       },
       {
+        path: 'findings-detail',
+        title: 'Finding Details',
+        loadComponent: () =>
+          import('./features/findings/findings-detail-list/findings-detail-list.component').then(m => m.FindingsDetailListComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ComplianceHead', 'Operator'] }
+      },
+      {
         path: 'excel-upload',
         title: 'Import Excel',
         loadComponent: () =>

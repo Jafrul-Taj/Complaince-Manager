@@ -308,7 +308,7 @@
             </thead>
             <tbody>
               @for (b of filteredBranchSummary; track b.branchId) {
-                <tr>
+                <tr class="clickable-row" (click)="onBranchClick(b.branchId, b.branchName)">
                   <td class="td-truncate" title="{{ b.branchName }}">{{ b.branchName }}</td>
                   <td class="td-num fw-600">{{ b.totalFindings }}</td>
                   <td class="td-num text-high">{{ b.highCount }}</td>
@@ -357,7 +357,7 @@
             </thead>
             <tbody>
               @for (o of officerSummary; track o.officerId) {
-                <tr>
+                <tr class="clickable-row" (click)="onOfficerClick(o.officerId, o.officerName)">
                   <td class="td-truncate" title="{{ o.officerName }}">{{ o.officerName }}</td>
                   <td class="td-num fw-600">{{ o.totalFindings }}</td>
                   <td class="td-num text-high">{{ o.highCount }}</td>
@@ -400,7 +400,7 @@
             </thead>
             <tbody>
               @for (y of yearComparison; track y.year) {
-                <tr>
+                <tr class="clickable-row" (click)="onYearClick(y.year)">
                   <td class="fw-600">{{ y.year }}</td>
                   <td class="td-num fw-600">{{ y.totalFindings }}</td>
                   <td class="td-num text-high">{{ y.highCount }}</td>
@@ -438,7 +438,7 @@
             </thead>
             <tbody>
               @for (a of areaBreakdown; track a.area) {
-                <tr>
+                <tr class="clickable-row" (click)="onAreaClick(a.area)">
                   <td class="td-area-name">{{ a.area }}</td>
                   <td class="td-num fw-600">{{ a.totalFindings }}</td>
                   <td class="td-num text-high">{{ a.highCount }}</td>
@@ -474,7 +474,7 @@
             </thead>
             <tbody>
               @for (c of filteredCategoryBreakdown; track c.category; let i = $index) {
-                <tr>
+                <tr class="clickable-row" (click)="onCategoryClick(c.category)">
                   <td class="td-idx">{{ i + 1 }}</td>
                   <td class="td-area-name">{{ c.category }}</td>
                   <td class="td-num fw-600">{{ c.count }}</td>

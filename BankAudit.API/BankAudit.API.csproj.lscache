@@ -84,6 +84,7 @@ DTOs/Dashboard/
  AreaBreakdownDto.cs
  BranchSummaryDto.cs
  CategoryBreakdownDto.cs
+ FindingDetailDto.cs
  KpiDto.cs
  OfficerSummaryDto.cs
  RecentFindingDto.cs

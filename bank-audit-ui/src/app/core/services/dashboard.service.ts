@@ -67,4 +67,12 @@ export class DashboardService {
   getExportData(f: FilterParams) {
     return this.http.get<any[]>(`${this.API}/export`, { params: this.toParams(f) });
   }
+
+  getFindingsByFilter(f: FilterParams, focusType?: string, focusId?: number, focusValue?: string) {
+    let p = this.toParams(f);
+    if (focusType)               p = p.set('focusType',  focusType);
+    if (focusId !== undefined)   p = p.set('focusId',    focusId);
+    if (focusValue)              p = p.set('focusValue', focusValue);
+    return this.http.get<any[]>(`${this.API}/findings-by-filter`, { params: p });
+  }
 }

@@ -14,4 +14,5 @@ public interface IDashboardService
     Task<List<YearComparisonDto>> GetYearComparisonAsync(int[]? branchIds = null, string[]? areas = null, int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null);
     Task<List<OfficerSummaryDto>> GetOfficerListAsync();
     Task<List<FindingDto>> GetExportDataAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, string[]? statuses = null, string[]? lapsesType = null);
+    Task<List<FindingDetailDto>> GetFindingsByFilterAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null, string? focusType = null, int? focusId = null, string? focusValue = null);
 }

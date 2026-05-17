@@ -1,0 +1,197 @@
+<div class="flist-root">
+
+  <!-- ── Page Header ───────────────────────────────────────────── -->
+  <div class="flist-topbar">
+    <div class="topbar-left">
+      <button mat-icon-button (click)="goBack()" class="back-btn"><mat-icon>arrow_back</mat-icon></button>
+      <div>
+        <h2 class="page-title">Finding Details</h2>
+        <span class="page-sub">{{ focusType | titlecase }}: <strong>{{ focusLabel }}</strong></span>
+      </div>
+    </div>
+    <button class="export-btn" (click)="exportCsv()" [disabled]="!dataSource.data.length">
+      <mat-icon>download</mat-icon> Export CSV
+    </button>
+  </div>
+
+  <!-- ── Loading ───────────────────────────────────────────────── -->
+  @if (loading) {
+    <div class="loading-overlay">
+      <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+      <span>Loading findings…</span>
+    </div>
+  }
+
+  <!-- ── Summary Card ──────────────────────────────────────────── -->
+  @if (!loading && totalCount > 0) {
+    <div class="summary-card">
+      <div class="summary-stats">
+        <div class="stat-pill stat-total">
+          <span class="stat-num">{{ totalCount }}</span>
+          <span class="stat-lbl">Total</span>
+        </div>
+        <div class="stat-pill stat-high">
+          <span class="stat-num">{{ highCount }}</span>
+          <span class="stat-lbl">High</span>
+        </div>
+        <div class="stat-pill stat-medium">
+          <span class="stat-num">{{ mediumCount }}</span>
+          <span class="stat-lbl">Medium</span>
+        </div>
+        <div class="stat-pill stat-low">
+          <span class="stat-num">{{ lowCount }}</span>
+          <span class="stat-lbl">Low</span>
+        </div>
+        <div class="stat-pill stat-rectified">
+          <span class="stat-num">{{ rectifiedCount }}</span>
+          <span class="stat-lbl">Rectified</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Filter Bar ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <mat-icon class="search-ico">search</mat-icon>
+      <input class="search-input" placeholder="Search findings…" (input)="onSearch($event)" />
+    </div>
+    <div class="filter-selects">
+      <select class="flt-select" (change)="onRiskChange($event)">
+        <option value="">All Risk Levels</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <select class="flt-select" (change)="onStatusChange($event)">
+        <option value="">All Statuses</option>
+        <option value="Rectified">Rectified</option>
+        <option value="Unrectified">Unrectified</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Table ─────────────────────────────────────────────────── -->
+  @if (!loading) {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="dataSource" matSort class="findings-table">
+
+        <!-- SL No -->
+        <ng-container matColumnDef="slNo">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-sl">Sl.No</th>
+          <td mat-cell *matCellDef="let f" class="col-sl mono">{{ f.slNo }}</td>
+        </ng-container>
+
+        <!-- Branch -->
+        <ng-container matColumnDef="branch">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
+          <td mat-cell *matCellDef="let f">
+            <div class="branch-cell">
+              <span class="branch-name">{{ f.branchName }}</span>
+              <span class="branch-code">{{ f.branchCode }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Officer -->
+        <ng-container matColumnDef="officer">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-officer">Officer</th>
+          <td mat-cell *matCellDef="let f" class="col-officer trunc"
+              [matTooltip]="f.officerName" matTooltipPosition="above">
+            {{ truncate(f.officerName, 20) }}
+          </td>
+        </ng-container>
+
+        <!-- Year -->
+        <ng-container matColumnDef="year">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-year">Year</th>
+          <td mat-cell *matCellDef="let f" class="col-year mono">{{ f.year }}</td>
+        </ng-container>
+
+        <!-- Finding Area -->
+        <ng-container matColumnDef="findingArea">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-area">Area</th>
+          <td mat-cell *matCellDef="let f" class="col-area trunc"
+              [matTooltip]="f.findingArea" matTooltipPosition="above">
+            {{ truncate(f.findingArea, 18) }}
+          </td>
+        </ng-container>
+
+        <!-- Customers -->
+        <ng-container matColumnDef="nameOfCustomers">
+          <th mat-header-cell *matHeaderCellDef class="col-cust">Customers</th>
+          <td mat-cell *matCellDef="let f" class="col-cust trunc"
+              [matTooltip]="f.nameOfCustomers" matTooltipPosition="above">
+            {{ truncate(f.nameOfCustomers, 30) }}
+          </td>
+        </ng-container>
+
+        <!-- Finding Details -->
+        <ng-container matColumnDef="findingDetails">
+          <th mat-header-cell *matHeaderCellDef class="col-details">Details</th>
+          <td mat-cell *matCellDef="let f" class="col-details trunc"
+              [matTooltip]="f.findingDetails" matTooltipPosition="above">
+            {{ truncate(f.findingDetails, 60) }}
+          </td>
+        </ng-container>
+
+        <!-- Lapses Originated -->
+        <ng-container matColumnDef="lapsesOriginated">
+          <th mat-header-cell *matHeaderCellDef class="col-lapses">Lapses</th>
+          <td mat-cell *matCellDef="let f" class="col-lapses trunc"
+              [matTooltip]="f.lapsesOriginated" matTooltipPosition="above">
+            {{ truncate(f.lapsesOriginated, 25) }}
+          </td>
+        </ng-container>
+
+        <!-- Category -->
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-cat">Category</th>
+          <td mat-cell *matCellDef="let f" class="col-cat trunc"
+              [matTooltip]="f.category" matTooltipPosition="above">
+            {{ truncate(f.category, 22) }}
+          </td>
+        </ng-container>
+
+        <!-- Risk Rating -->
+        <ng-container matColumnDef="riskRating">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-risk">Risk</th>
+          <td mat-cell *matCellDef="let f" class="col-risk">
+            <span [class]="'risk-badge risk-' + f.riskRating.toLowerCase()">{{ f.riskRating }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Compliance Status -->
+        <ng-container matColumnDef="complianceStatus">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-status">Status</th>
+          <td mat-cell *matCellDef="let f" class="col-status">
+            <span class="status-indicator">
+              <span [class]="'dot dot-' + statusDotClass(f.complianceStatus)"></span>
+              {{ f.complianceStatus }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Audit Base Date -->
+        <ng-container matColumnDef="auditBaseDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-date">Audit Date</th>
+          <td mat-cell *matCellDef="let f" class="col-date mono">{{ formatDate(f.auditBaseDate) }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"
+            class="data-row"
+            (click)="openDetail(row)"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell no-data-row" [attr.colspan]="columns.length">
+            <mat-icon>search_off</mat-icon>
+            No findings match your filters.
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons class="findings-paginator" />
+  }
+
+</div>
