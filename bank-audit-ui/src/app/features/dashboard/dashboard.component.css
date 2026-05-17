@@ -212,6 +212,13 @@
   border-bottom: 1.5px solid #f3f4f6;
 }
 .card-hdr-text { font-size: 12px; font-weight: 600; color: #374151; white-space: nowrap; }
+.hdr-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #e0e7ff; color: #4338ca;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+  vertical-align: middle; margin-left: 4px;
+}
 
 .inline-search {
   flex: 1; min-width: 0; height: 26px;

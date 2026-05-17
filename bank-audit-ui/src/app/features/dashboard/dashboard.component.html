@@ -178,6 +178,33 @@
       </div>
     </div>
 
+    <!-- Lapses Type -->
+    <div class="filter-item">
+      <label>Lapses Type</label>
+      <div class="ms-wrap">
+        <button class="ms-trigger" [class.ms-active]="sel.lapsesTypes.length" (click)="toggleDrop('lapsesType', $event)">
+          <span class="ms-label">{{ lapsesTypeLabel }}</span>
+          <span class="ms-caret">{{ dropOpen['lapsesType'] ? '▴' : '▾' }}</span>
+        </button>
+        @if (dropOpen['lapsesType']) {
+          <div class="ms-panel" (click)="stopProp($event)">
+            <label class="ms-item">
+              <input type="checkbox"
+                [checked]="isAllSelected(sel.lapsesTypes, lapsesTypeOptions)"
+                (change)="toggleAll(sel.lapsesTypes, lapsesTypeOptions)">
+              Select All
+            </label>
+            @for (t of lapsesTypeOptions; track t) {
+              <label class="ms-item">
+                <input type="checkbox" [checked]="isSelected(sel.lapsesTypes, t)" (change)="toggleItem(sel.lapsesTypes, t)">
+                {{ t }}
+              </label>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <div class="filter-actions">
       <button class="btn-reset" (click)="resetFilters()">Reset</button>
       <button class="btn-apply" (click)="applyFilters()">
@@ -256,7 +283,7 @@
       <!-- Branch Summary (62%) -->
       <div class="table-card">
         <div class="card-hdr-row">
-          <span class="card-hdr-text">Branch Summary</span>
+          <span class="card-hdr-text">Branch Summary <span class="hdr-count">{{ filteredBranchSummary.length }}</span></span>
           <input class="inline-search" type="text" placeholder="Search branches…" [(ngModel)]="branchSearch">
         </div>
         <div class="mini-scroll branch-scroll">

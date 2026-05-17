@@ -21,26 +21,28 @@ export class DashboardComponent implements OnInit {
   private branchSvc = inject(BranchService);
 
   // ── Reference data ──────────────────────────────────────────────
-  yearOptions   = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
-  riskOptions   = ['High', 'Medium', 'Low'];
-  statusOptions = ['Rectified', 'Unrectified'];
+  yearOptions        = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
+  riskOptions        = ['High', 'Medium', 'Low'];
+  statusOptions      = ['Rectified', 'Unrectified'];
+  lapsesTypeOptions  = ['Operational', 'Documentation'];
   branches: Branch[] = [];
   officers: any[] = [];
   areas: string[] = [];
 
   // ── Multi-select state (empty array = "All") ─────────────────────
   sel = {
-    years:      [] as number[],
-    branchIds:  [] as number[],
-    areas:      [] as string[],
-    risks:      [] as string[],
-    statuses:   [] as string[],
-    officerIds: [] as number[]
+    years:       [] as number[],
+    branchIds:   [] as number[],
+    areas:       [] as string[],
+    risks:       [] as string[],
+    statuses:    [] as string[],
+    officerIds:  [] as number[],
+    lapsesTypes: [] as string[]
   };
 
   // ── Dropdown open state ──────────────────────────────────────────
   dropOpen: Record<string, boolean> = {
-    year: false, branch: false, area: false, risk: false, status: false, officer: false
+    year: false, branch: false, area: false, risk: false, status: false, officer: false, lapsesType: false
   };
 
   // ── Search text for searchable dropdowns ─────────────────────────
@@ -108,6 +110,11 @@ export class DashboardComponent implements OnInit {
     return this.joinLabels(names, 2);
   }
 
+  get lapsesTypeLabel(): string {
+    if (!this.sel.lapsesTypes.length) return 'All Types';
+    return this.joinLabels(this.sel.lapsesTypes, 2);
+  }
+
   private joinLabels(labels: string[], maxShow: number): string {
     if (labels.length <= maxShow) return labels.join(', ');
     return labels.slice(0, maxShow).join(', ') + ` +${labels.length - maxShow} more`;
@@ -170,12 +177,13 @@ export class DashboardComponent implements OnInit {
   // ── FilterParams getter ──────────────────────────────────────────
   get filterParams(): FilterParams {
     return {
-      years:       this.sel.years.length      ? [...this.sel.years]      : undefined,
-      branchIds:   this.sel.branchIds.length  ? [...this.sel.branchIds]  : undefined,
-      areas:       this.sel.areas.length      ? [...this.sel.areas]      : undefined,
-      riskRatings: this.sel.risks.length      ? [...this.sel.risks]      : undefined,
-      statuses:    this.sel.statuses.length   ? [...this.sel.statuses]   : undefined,
-      officerIds:  this.sel.officerIds.length ? [...this.sel.officerIds] : undefined
+      years:       this.sel.years.length       ? [...this.sel.years]       : undefined,
+      branchIds:   this.sel.branchIds.length   ? [...this.sel.branchIds]   : undefined,
+      areas:       this.sel.areas.length       ? [...this.sel.areas]       : undefined,
+      riskRatings: this.sel.risks.length       ? [...this.sel.risks]       : undefined,
+      statuses:    this.sel.statuses.length    ? [...this.sel.statuses]    : undefined,
+      officerIds:  this.sel.officerIds.length  ? [...this.sel.officerIds]  : undefined,
+      lapsesTypes: this.sel.lapsesTypes.length ? [...this.sel.lapsesTypes] : undefined
     };
   }
 
@@ -195,7 +203,7 @@ export class DashboardComponent implements OnInit {
   }
 
   resetFilters() {
-    this.sel        = { years: [], branchIds: [], areas: [], risks: [], statuses: [], officerIds: [] };
+    this.sel        = { years: [], branchIds: [], areas: [], risks: [], statuses: [], officerIds: [], lapsesTypes: [] };
     this.branchSearch   = '';
     this.categorySearch = '';
     Object.keys(this.dropSearch).forEach(k => this.dropSearch[k] = '');

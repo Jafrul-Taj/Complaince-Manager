@@ -9,6 +9,7 @@ export interface FilterParams {
   riskRatings?: string[];
   statuses?:    string[];
   officerIds?:  number[];
+  lapsesTypes?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +26,7 @@ export class DashboardService {
     (f.riskRatings ?? []).forEach(v => p = p.append('riskRatings', v));
     (f.statuses    ?? []).forEach(v => p = p.append('statuses',    v));
     (f.officerIds  ?? []).forEach(v => p = p.append('officerIds',  v));
+    (f.lapsesTypes ?? []).forEach(v => p = p.append('lapsesType',  v));
     return p;
   }
 
@@ -55,10 +57,7 @@ export class DashboardService {
   }
 
   getYearComparison(f: FilterParams) {
-    let p = new HttpParams();
-    (f.branchIds ?? []).forEach(v => p = p.append('branchIds', v));
-    (f.areas     ?? []).forEach(v => p = p.append('areas',     v));
-    return this.http.get<any[]>(`${this.API}/year-comparison`, { params: p });
+    return this.http.get<any[]>(`${this.API}/year-comparison`, { params: this.toParams(f) });
   }
 
   getOfficers() {

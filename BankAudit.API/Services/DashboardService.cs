@@ -14,17 +14,21 @@ public class DashboardService : IDashboardService
 
     public DashboardService(AppDbContext db) => _db = db;
 
+    // ── Core query builder ──────────────────────────────────────────
     private IQueryable<AuditFinding> BuildQuery(
         int[]? years = null, int[]? branchIds = null, string[]? areas = null,
-        string[]? riskRatings = null, int[]? officerIds = null, string[]? statuses = null)
+        string[]? riskRatings = null, int[]? officerIds = null,
+        string[]? statuses = null, string[]? lapsesType = null)
     {
-        var q = _db.AuditFindings.AsQueryable();
+        var q = _db.AuditFindings
+            .Include(f => f.ComplianceAuditReport)
+            .AsQueryable();
 
         if (years != null && years.Length > 0)
             q = q.Where(f => years.Contains(f.Year));
 
         if (branchIds != null && branchIds.Length > 0)
-            q = q.Where(f => branchIds.Contains(f.BranchId));
+            q = q.Where(f => branchIds.Contains(f.ComplianceAuditReport.BranchId));
 
         if (areas != null && areas.Length > 0)
             q = q.Where(f => areas.Contains(f.FindingArea));
@@ -44,12 +48,19 @@ public class DashboardService : IDashboardService
         if (statuses != null && statuses.Length > 0)
             q = q.Where(f => statuses.Contains(f.ComplianceStatus));
 
+        if (lapsesType != null && lapsesType.Length > 0)
+            q = q.Where(f => lapsesType.Contains(f.LapsesType));
+
         return q;
     }
 
-    public async Task<KpiDto> GetKpisAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, int[]? officerIds = null, string[]? statuses = null)
+    // ── KPIs ────────────────────────────────────────────────────────
+    public async Task<KpiDto> GetKpisAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, int[]? officerIds = null,
+        string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses, lapsesType).ToListAsync();
         var total    = findings.Count;
         var rectified = findings.Count(f => f.ComplianceStatus == "Rectified");
         return new KpiDto
@@ -63,47 +74,82 @@ public class DashboardService : IDashboardService
         };
     }
 
-    public async Task<List<RiskDistributionDto>> GetRiskDistributionAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? statuses = null)
+    // ── Risk Distribution ────────────────────────────────────────────
+    public async Task<List<RiskDistributionDto>> GetRiskDistributionAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, branchIds, areas, statuses: statuses).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, areas, officerIds: officerIds, statuses: statuses, lapsesType: lapsesType).ToListAsync();
         return findings
             .GroupBy(f => f.RiskRating)
             .Select(g => new RiskDistributionDto { RiskRating = g.Key.ToString(), Count = g.Count() })
             .ToList();
     }
 
-    public async Task<List<BranchSummaryDto>> GetBranchSummaryAsync(int[]? years = null, string[]? areas = null, string[]? statuses = null)
+    // ── Branch Summary (single method, join-based) ──────────────────
+    public async Task<List<BranchSummaryDto>> GetBranchSummaryAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, int[]? officerIds = null,
+        string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, areas: areas, statuses: statuses)
-            .Include(f => f.Branch)
-            .ToListAsync();
+        var query = from af in _db.AuditFindings
+                    join car in _db.ComplianceAuditReports on af.ComplianceAuditReportId equals car.Id
+                    join b in _db.Branches on car.BranchId equals b.Id
+                    select new { AuditFinding = af, Branch = b };
 
-        return findings
-            .GroupBy(f => new { f.BranchId, BranchName = f.Branch?.BranchName ?? "", BranchCode = f.Branch?.BranchCode ?? "" })
-            .Select(g =>
+        if (years != null && years.Length > 0)
+            query = query.Where(x => years.Contains(x.AuditFinding.Year));
+
+        if (branchIds != null && branchIds.Length > 0)
+            query = query.Where(x => branchIds.Contains(x.Branch.Id));
+
+        if (areas != null && areas.Length > 0)
+            query = query.Where(x => areas.Contains(x.AuditFinding.FindingArea));
+
+        if (riskRatings != null && riskRatings.Length > 0)
+        {
+            var parsed = riskRatings
+                .Select(r => Enum.TryParse<RiskRating>(r, true, out var v) ? (RiskRating?)v : null)
+                .Where(r => r.HasValue).Select(r => r!.Value).ToArray();
+            if (parsed.Length > 0)
+                query = query.Where(x => parsed.Contains(x.AuditFinding.RiskRating));
+        }
+
+        if (officerIds != null && officerIds.Length > 0)
+            query = query.Where(x => officerIds.Contains(x.AuditFinding.AssignedOfficerId));
+
+        if (statuses != null && statuses.Length > 0)
+            query = query.Where(x => statuses.Contains(x.AuditFinding.ComplianceStatus));
+
+        if (lapsesType != null && lapsesType.Length > 0)
+            query = query.Where(x => lapsesType.Contains(x.AuditFinding.LapsesType));
+
+        return await query
+            .GroupBy(x => new { x.Branch.Id, x.Branch.BranchName, BranchCode = x.Branch.BranchCode ?? "" })
+            .Select(g => new BranchSummaryDto
             {
-                var total = g.Count();
-                var rect  = g.Count(f => f.ComplianceStatus == "Rectified");
-                return new BranchSummaryDto
-                {
-                    BranchId          = g.Key.BranchId,
-                    BranchName        = g.Key.BranchName,
-                    BranchCode        = g.Key.BranchCode,
-                    TotalFindings     = total,
-                    HighCount         = g.Count(f => f.RiskRating == RiskRating.High),
-                    MediumCount       = g.Count(f => f.RiskRating == RiskRating.Medium),
-                    LowCount          = g.Count(f => f.RiskRating == RiskRating.Low),
-                    RectifiedCount    = rect,
-                    RectificationRate = total > 0 ? Math.Round((double)rect / total * 100, 1) : 0
-                };
+                BranchId          = g.Key.Id,
+                BranchName        = g.Key.BranchName,
+                BranchCode        = g.Key.BranchCode,
+                TotalFindings     = g.Count(),
+                HighCount         = g.Count(x => x.AuditFinding.RiskRating == RiskRating.High),
+                MediumCount       = g.Count(x => x.AuditFinding.RiskRating == RiskRating.Medium),
+                LowCount          = g.Count(x => x.AuditFinding.RiskRating == RiskRating.Low),
+                RectifiedCount    = g.Count(x => x.AuditFinding.ComplianceStatus == "Rectified"),
+                RectificationRate = g.Count() > 0
+                    ? Math.Round((double)g.Count(x => x.AuditFinding.ComplianceStatus == "Rectified") / g.Count() * 100, 1)
+                    : 0
             })
-            .OrderByDescending(b => b.TotalFindings)
-            .ToList();
+            .OrderByDescending(x => x.TotalFindings)
+            .ToListAsync();
     }
 
-    public async Task<List<AreaBreakdownDto>> GetAreaBreakdownAsync(int[]? years = null, int[]? branchIds = null, string[]? statuses = null)
+    // ── Area Breakdown ───────────────────────────────────────────────
+    public async Task<List<AreaBreakdownDto>> GetAreaBreakdownAsync(
+        int[]? years = null, int[]? branchIds = null,
+        int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, branchIds, statuses: statuses).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, officerIds: officerIds, statuses: statuses, lapsesType: lapsesType).ToListAsync();
         return findings
             .GroupBy(f => f.FindingArea)
             .Select(g =>
@@ -125,9 +171,13 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<CategoryBreakdownDto>> GetCategoryBreakdownAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? riskRatings = null, int top = 50, string[]? statuses = null)
+    // ── Category Breakdown ───────────────────────────────────────────
+    public async Task<List<CategoryBreakdownDto>> GetCategoryBreakdownAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, int top = 50,
+        int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, branchIds, areas, riskRatings, statuses: statuses).ToListAsync();
+        var findings = await BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses, lapsesType).ToListAsync();
         return findings
             .GroupBy(f => f.Category)
             .Select(g =>
@@ -147,9 +197,12 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<OfficerSummaryDto>> GetOfficerSummaryAsync(int[]? years = null, int[]? branchIds = null, string[]? areas = null, string[]? statuses = null)
+    // ── Officer Summary ──────────────────────────────────────────────
+    public async Task<List<OfficerSummaryDto>> GetOfficerSummaryAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? statuses = null, int[]? officerIds = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(years, branchIds, areas, statuses: statuses)
+        var findings = await BuildQuery(years, branchIds, areas, officerIds: officerIds, statuses: statuses, lapsesType: lapsesType)
             .Include(f => f.AssignedOfficer)
             .ToListAsync();
 
@@ -175,9 +228,12 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    public async Task<List<YearComparisonDto>> GetYearComparisonAsync(int[]? branchIds = null, string[]? areas = null)
+    // ── Year Comparison ──────────────────────────────────────────────
+    public async Task<List<YearComparisonDto>> GetYearComparisonAsync(
+        int[]? branchIds = null, string[]? areas = null,
+        int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null)
     {
-        var findings = await BuildQuery(branchIds: branchIds, areas: areas).ToListAsync();
+        var findings = await BuildQuery(branchIds: branchIds, areas: areas, officerIds: officerIds, statuses: statuses, lapsesType: lapsesType).ToListAsync();
         return findings
             .GroupBy(f => f.Year)
             .Select(g =>
@@ -199,22 +255,22 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
+    // ── Officer list (for filter dropdown) ──────────────────────────
     public async Task<List<OfficerSummaryDto>> GetOfficerListAsync()
     {
         return await _db.Users
             .Where(u => u.Role == UserRole.ComplianceOfficer && u.IsActive)
-            .Select(u => new OfficerSummaryDto
-            {
-                OfficerId   = u.Id,
-                OfficerName = u.FullName
-            })
+            .Select(u => new OfficerSummaryDto { OfficerId = u.Id, OfficerName = u.FullName })
             .OrderBy(o => o.OfficerName)
             .ToListAsync();
     }
 
-    public async Task<List<FindingDto>> GetExportDataAsync(int[]? years = null, int[]? branchIds = null)
+    // ── Export ───────────────────────────────────────────────────────
+    public async Task<List<FindingDto>> GetExportDataAsync(
+        int[]? years = null, int[]? branchIds = null, string[]? areas = null,
+        string[]? riskRatings = null, string[]? statuses = null, string[]? lapsesType = null)
     {
-        var query = BuildQuery(years, branchIds)
+        var query = BuildQuery(years, branchIds, areas, riskRatings, statuses: statuses, lapsesType: lapsesType)
             .Include(f => f.Branch)
             .Include(f => f.AssignedOfficer);
 
