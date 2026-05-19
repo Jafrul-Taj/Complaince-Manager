@@ -54,6 +54,11 @@ export class DashboardComponent implements OnInit {
   branchSearch   = '';
   categorySearch = '';
 
+  // ── Category pagination ──────────────────────────────────────────
+  catPage             = 0;
+  catPageSize         = 10;
+  catPageSizeOptions  = [10, 25, 50, 100];
+
   // ── Data ─────────────────────────────────────────────────────────
   loading        = false;
   kpis: any      = null;
@@ -76,6 +81,20 @@ export class DashboardComponent implements OnInit {
     const s = this.categorySearch.toLowerCase();
     return this.categoryBreakdown.filter(c => c.category.toLowerCase().includes(s));
   }
+
+  get catTotalCount():  number { return this.filteredCategoryBreakdown.length; }
+  get catTotalPages():  number { return Math.ceil(this.catTotalCount / this.catPageSize) || 1; }
+  get catPageFrom():    number { return this.catTotalCount === 0 ? 0 : this.catPage * this.catPageSize + 1; }
+  get catPageTo():      number { return Math.min((this.catPage + 1) * this.catPageSize, this.catTotalCount); }
+
+  get catPagedBreakdown(): any[] {
+    const start = this.catPage * this.catPageSize;
+    return this.filteredCategoryBreakdown.slice(start, start + this.catPageSize);
+  }
+
+  onCatSearch(value: string) { this.categorySearch = value; this.catPage = 0; }
+  setCatPage(page: number)    { if (page >= 0 && page < this.catTotalPages) this.catPage = page; }
+  setCatPageSize(e: Event)    { this.catPageSize = +(e.target as HTMLSelectElement).value; this.catPage = 0; }
 
   // ── Dropdown labels ──────────────────────────────────────────────
   get yearLabel(): string {
@@ -208,6 +227,8 @@ export class DashboardComponent implements OnInit {
     this.sel        = { years: [], branchIds: [], areas: [], risks: [], statuses: [], officerIds: [], lapsesTypes: [] };
     this.branchSearch   = '';
     this.categorySearch = '';
+    this.catPage        = 0;
+    this.catPageSize    = 10;
     Object.keys(this.dropSearch).forEach(k => this.dropSearch[k] = '');
     this.loadAll();
   }
@@ -223,7 +244,7 @@ export class DashboardComponent implements OnInit {
       year:     this.dashSvc.getYearComparison(fp),
       officer:  this.dashSvc.getOfficerSummary(fp),
       area:     this.dashSvc.getAreaBreakdown(fp),
-      category: this.dashSvc.getCategoryBreakdown(fp, 50)
+      category: this.dashSvc.getCategoryBreakdown(fp)
     }).subscribe({
       next: (data) => {
         this.kpis = data.kpis;
@@ -233,6 +254,7 @@ export class DashboardComponent implements OnInit {
         this.yearComparison    = data.year    ?? [];
         this.areaBreakdown     = data.area    ?? [];
         this.categoryBreakdown = data.category ?? [];
+        this.catPage = 0;
         this.loading = false;
       },
       error: () => { this.loading = false; }

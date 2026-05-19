@@ -174,7 +174,7 @@ public class DashboardService : IDashboardService
     // ── Category Breakdown ───────────────────────────────────────────
     public async Task<List<CategoryBreakdownDto>> GetCategoryBreakdownAsync(
         int[]? years = null, int[]? branchIds = null, string[]? areas = null,
-        string[]? riskRatings = null, int top = 50,
+        string[]? riskRatings = null, int top = int.MaxValue,
         int[]? officerIds = null, string[]? statuses = null, string[]? lapsesType = null)
     {
         var findings = await BuildQuery(years, branchIds, areas, riskRatings, officerIds, statuses, lapsesType).ToListAsync();
@@ -189,11 +189,11 @@ public class DashboardService : IDashboardService
                     Category          = g.Key,
                     Count             = total,
                     RectifiedCount    = rect,
+                    BranchCount       = g.Select(f => f.BranchId).Distinct().Count(),
                     RectificationRate = total > 0 ? Math.Round((double)rect / total * 100, 1) : 0
                 };
             })
             .OrderByDescending(c => c.Count)
-            .Take(top)
             .ToList();
     }
 

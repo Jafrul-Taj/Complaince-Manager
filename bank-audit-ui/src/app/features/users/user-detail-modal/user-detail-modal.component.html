@@ -1,0 +1,52 @@
+<div class="modal-root">
+
+  <div class="modal-header">
+    <div class="modal-title-row">
+      <div class="avatar">{{ user.fullName.charAt(0).toUpperCase() }}</div>
+      <div>
+        <h2 class="modal-title">{{ user.fullName }}</h2>
+        <span class="modal-sub">&#64;{{ user.username }}</span>
+      </div>
+    </div>
+    <button class="close-btn" mat-icon-button (click)="dialogRef.close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body">
+
+    <div class="detail-row">
+      <span class="detail-label">Role</span>
+      <span [class]="'role-badge role-' + user.role.toLowerCase()">{{ formatRole(user.role) }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Status</span>
+      <span class="status-indicator">
+        <span [class]="'dot ' + (user.isActive ? 'dot-green' : 'dot-gray')"></span>
+        {{ user.isActive ? 'Active' : 'Inactive' }}
+      </span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Email</span>
+      <span class="detail-value">{{ user.email || '—' }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Username</span>
+      <span class="detail-value mono">{{ user.username }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">Created</span>
+      <span class="detail-value">{{ formatDate(user.createdAt) }}</span>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button mat-button (click)="dialogRef.close()">Close</button>
+  </div>
+
+</div>

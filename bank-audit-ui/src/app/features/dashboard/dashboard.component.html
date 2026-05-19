@@ -459,24 +459,27 @@
       <mat-tab label="Category Breakdown">
         <div class="tab-content">
           <div class="tab-search-row">
-            <input class="tab-search" type="text" placeholder="Search categories…" [(ngModel)]="categorySearch">
-            <span class="tab-count">{{ filteredCategoryBreakdown.length }} categories</span>
+            <input class="tab-search" type="text" placeholder="Search categories…"
+              [value]="categorySearch" (input)="onCatSearch($any($event.target).value)">
+            <span class="tab-count">{{ catTotalCount }} categories</span>
           </div>
           <table class="breakdown-table">
             <thead>
               <tr>
                 <th class="th-idx">#</th>
                 <th class="th-left">Category</th>
+                <th class="th-num">Branches</th>
                 <th class="th-num">Total</th>
                 <th class="th-num text-green">Rectified</th>
                 <th class="th-num">Rate %</th>
               </tr>
             </thead>
             <tbody>
-              @for (c of filteredCategoryBreakdown; track c.category; let i = $index) {
+              @for (c of catPagedBreakdown; track c.category; let i = $index) {
                 <tr class="clickable-row" (click)="onCategoryClick(c.category)">
-                  <td class="td-idx">{{ i + 1 }}</td>
+                  <td class="td-idx">{{ catPageFrom + i }}</td>
                   <td class="td-area-name">{{ c.category }}</td>
+                  <td class="td-num">{{ c.branchCount }}</td>
                   <td class="td-num fw-600">{{ c.count }}</td>
                   <td class="td-num text-green">{{ c.rectifiedCount }}</td>
                   <td class="td-num">
@@ -484,9 +487,41 @@
                   </td>
                 </tr>
               }
-              @empty { <tr><td colspan="5" class="td-empty">No categories found</td></tr> }
+              @empty { <tr><td colspan="6" class="td-empty">No categories found</td></tr> }
             </tbody>
           </table>
+
+          <!-- ── Pagination ──────────────────────────────────────── -->
+          @if (catTotalCount > 0) {
+            <div class="cat-pagination">
+              <div class="pag-info">
+                Showing {{ catPageFrom }} – {{ catPageTo }} of {{ catTotalCount }}
+              </div>
+              <div class="pag-controls">
+                <button class="pag-btn" (click)="setCatPage(0)" [disabled]="catPage === 0" title="First">
+                  <span class="material-icons">first_page</span>
+                </button>
+                <button class="pag-btn" (click)="setCatPage(catPage - 1)" [disabled]="catPage === 0" title="Previous">
+                  <span class="material-icons">chevron_left</span>
+                </button>
+                <span class="pag-page">{{ catPage + 1 }} / {{ catTotalPages }}</span>
+                <button class="pag-btn" (click)="setCatPage(catPage + 1)" [disabled]="catPage >= catTotalPages - 1" title="Next">
+                  <span class="material-icons">chevron_right</span>
+                </button>
+                <button class="pag-btn" (click)="setCatPage(catTotalPages - 1)" [disabled]="catPage >= catTotalPages - 1" title="Last">
+                  <span class="material-icons">last_page</span>
+                </button>
+              </div>
+              <div class="pag-size">
+                <label>Per page</label>
+                <select (change)="setCatPageSize($event)">
+                  @for (s of catPageSizeOptions; track s) {
+                    <option [value]="s" [selected]="s === catPageSize">{{ s }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
         </div>
       </mat-tab>
 

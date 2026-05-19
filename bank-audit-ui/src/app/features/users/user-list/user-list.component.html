@@ -1,65 +1,158 @@
-<div class="page-container">
-  <div class="page-header">
-    <h1>User Management</h1>
-    <button mat-raised-button color="primary" (click)="openForm()">
+<div class="ulist-root">
+
+  <!-- ── Page Header ───────────────────────────────────────────── -->
+  <div class="ulist-topbar">
+    <div class="topbar-left">
+      <div>
+        <h2 class="page-title">User Management</h2>
+        <span class="page-sub">Manage system users and roles</span>
+      </div>
+    </div>
+    <button mat-raised-button color="primary" class="add-btn" (click)="openForm()">
       <mat-icon>person_add</mat-icon> Add User
     </button>
   </div>
 
-  <mat-card>
-    <mat-card-content>
-      <mat-form-field appearance="outline" style="width:300px; margin-bottom:16px">
-        <mat-label>Search users</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput (keyup)="applyFilter($event)" placeholder="Name, username, role..." />
-      </mat-form-field>
+  <!-- ── Summary Card ──────────────────────────────────────────── -->
+  @if (totalCount > 0) {
+    <div class="summary-card">
+      <div class="summary-stats">
+        <div class="stat-pill stat-total">
+          <span class="stat-num">{{ totalCount }}</span>
+          <span class="stat-lbl">Total</span>
+        </div>
+        <div class="stat-pill stat-active">
+          <span class="stat-num">{{ activeCount }}</span>
+          <span class="stat-lbl">Active</span>
+        </div>
+        <div class="stat-pill stat-inactive">
+          <span class="stat-num">{{ inactiveCount }}</span>
+          <span class="stat-lbl">Inactive</span>
+        </div>
+        <div class="stat-pill stat-operator">
+          <span class="stat-num">{{ operatorCount }}</span>
+          <span class="stat-lbl">Operator</span>
+        </div>
+        <div class="stat-pill stat-officer">
+          <span class="stat-num">{{ officerCount }}</span>
+          <span class="stat-lbl">Officer</span>
+        </div>
+        <div class="stat-pill stat-head">
+          <span class="stat-num">{{ headCount }}</span>
+          <span class="stat-lbl">Head</span>
+        </div>
+      </div>
+    </div>
+  }
 
-      <table mat-table [dataSource]="dataSource" matSort class="full-width">
-        <ng-container matColumnDef="fullName">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Full Name</th>
-          <td mat-cell *matCellDef="let u">{{ u.fullName }}</td>
-        </ng-container>
-        <ng-container matColumnDef="username">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Username</th>
-          <td mat-cell *matCellDef="let u">{{ u.username }}</td>
-        </ng-container>
-        <ng-container matColumnDef="role">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
-          <td mat-cell *matCellDef="let u">
-            <span class="role-badge role-{{ u.role.toLowerCase() }}">{{ formatRole(u.role) }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>Email</th>
-          <td mat-cell *matCellDef="let u">{{ u.email }}</td>
-        </ng-container>
-        <ng-container matColumnDef="isActive">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let u">
-            <span [class]="u.isActive ? 'status-active' : 'status-inactive'">
-              {{ u.isActive ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let u">
-            <button mat-icon-button color="primary" (click)="openForm(u)" title="Edit">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="delete(u)" title="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell" colspan="6" style="text-align:center; padding:24px">No users found.</td>
-        </tr>
-      </table>
+  <!-- ── Filter Bar ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <mat-icon class="search-ico">search</mat-icon>
+      <input class="search-input" placeholder="Search users…" (input)="onSearch($event)" />
+    </div>
+    <div class="filter-selects">
+      <select class="flt-select" (change)="onRoleChange($event)">
+        <option value="">All Roles</option>
+        <option value="Operator">Operator</option>
+        <option value="ComplianceOfficer">Compliance Officer</option>
+        <option value="ComplianceHead">Compliance Head</option>
+      </select>
+      <select class="flt-select" (change)="onStatusChange($event)">
+        <option value="">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+    @if (selectedIds.size > 0) {
+      <button class="bulk-del-btn" (click)="bulkDelete()">
+        <mat-icon>delete_sweep</mat-icon>
+        Delete ({{ selectedIds.size }})
+      </button>
+    }
+  </div>
 
-      <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons />
-    </mat-card-content>
-  </mat-card>
+  <!-- ── Table ─────────────────────────────────────────────────── -->
+  <div class="table-wrap">
+    <table mat-table [dataSource]="dataSource" matSort class="users-table">
+
+      <!-- Checkbox -->
+      <ng-container matColumnDef="select" sticky>
+        <th mat-header-cell *matHeaderCellDef class="col-chk">
+          <input type="checkbox" class="row-chk" [checked]="isAllSelected()" (change)="toggleAll()" />
+        </th>
+        <td mat-cell *matCellDef="let u" class="col-chk" (click)="$event.stopPropagation()">
+          <input type="checkbox" class="row-chk" [checked]="selectedIds.has(u.id)" (change)="toggleSelect(u.id)" />
+        </td>
+      </ng-container>
+
+      <!-- Full Name -->
+      <ng-container matColumnDef="fullName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Full Name</th>
+        <td mat-cell *matCellDef="let u" class="td-name">{{ u.fullName }}</td>
+      </ng-container>
+
+      <!-- Username -->
+      <ng-container matColumnDef="username">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-user">Username</th>
+        <td mat-cell *matCellDef="let u" class="col-user mono">{{ u.username }}</td>
+      </ng-container>
+
+      <!-- Role -->
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-role">Role</th>
+        <td mat-cell *matCellDef="let u" class="col-role">
+          <span [class]="'role-badge role-' + u.role.toLowerCase()">{{ formatRole(u.role) }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Email -->
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-email">Email</th>
+        <td mat-cell *matCellDef="let u" class="col-email">{{ u.email }}</td>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-status">Status</th>
+        <td mat-cell *matCellDef="let u" class="col-status">
+          <span class="status-indicator">
+            <span [class]="'dot dot-' + statusDotClass(u.isActive)"></span>
+            {{ u.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Actions -->
+      <ng-container matColumnDef="actions" stickyEnd>
+        <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+        <td mat-cell *matCellDef="let u" class="col-actions" (click)="$event.stopPropagation()">
+          <button class="act-btn act-view" (click)="openDetail(u)" matTooltip="View Details">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button class="act-btn act-edit" (click)="openForm(u)" matTooltip="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button class="act-btn act-del" (click)="delete(u)" matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns;"
+          class="data-row"
+          [class.row-selected]="selectedIds.has(row.id)"
+          (click)="openDetail(row)"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data-row" [attr.colspan]="columns.length">
+          <mat-icon>search_off</mat-icon>
+          No users match your filters.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons class="users-paginator" />
+
 </div>

@@ -318,6 +318,81 @@
 .td-area-name { font-weight: 500; }
 .td-idx { text-align: center; color: #9ca3af; font-size: 11px; }
 
+/* ── Category Pagination ─────────────────────────────────────── */
+.cat-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 4px 2px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 4px;
+}
+
+.pag-info {
+  font-size: 11px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.pag-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pag-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.pag-btn .material-icons { font-size: 16px; width: 16px; height: 16px; }
+.pag-btn:hover:not([disabled]) { background: #f3f4f6; border-color: #d1d5db; }
+.pag-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+.pag-page {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.pag-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pag-size label {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.pag-size select {
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  height: 26px;
+}
+
+.pag-size select:focus { border-color: #c62828; }
+
 /* ── Clickable rows ──────────────────────────────────────────── */
 .mini-table tbody tr.clickable-row,
 .breakdown-table tbody tr.clickable-row { cursor: pointer; }
