@@ -294,6 +294,16 @@ public class ExcelUploadController : ControllerBase
                     result.AssignmentsCreated++;
                 }
 
+                // Parse AuditBaseDate from this row
+                DateTime? auditBaseDate = null;
+                if (!string.IsNullOrWhiteSpace(row.AuditBaseDate))
+                {
+                    var datePart = row.AuditBaseDate.Split(' ')[0];
+                    if (DateTime.TryParseExact(datePart, "dd/MM/yyyy",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        auditBaseDate = d;
+                }
+
                 // ComplianceAuditReport
                 var report = existingReports.FirstOrDefault(r =>
                     r.BranchId == branch.Id && r.Year == year);
@@ -305,6 +315,7 @@ public class ExcelUploadController : ControllerBase
                         BranchId        = branch.Id,
                         Year            = year,
                         AuditTeamLeadId = lead.Id,
+                        AuditBaseDate   = auditBaseDate,
                         CreatedAt       = DateTime.UtcNow
                     };
                     _db.ComplianceAuditReports.Add(report);
@@ -312,15 +323,11 @@ public class ExcelUploadController : ControllerBase
                     existingReports.Add(report);
                     result.ReportsCreated++;
                 }
-
-                // AuditFinding
-                DateTime? auditBaseDate = null;
-                if (!string.IsNullOrWhiteSpace(row.AuditBaseDate))
+                else if (auditBaseDate.HasValue &&
+                         (report.AuditBaseDate is null || auditBaseDate.Value < report.AuditBaseDate.Value))
                 {
-                    var datePart = row.AuditBaseDate.Split(' ')[0];
-                    if (DateTime.TryParseExact(datePart, "dd/MM/yyyy",
-                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
-                        auditBaseDate = d;
+                    // Keep the earliest date seen across all rows for this report
+                    report.AuditBaseDate = auditBaseDate;
                 }
 
                 if (!Enum.TryParse<RiskRating>(row.RiskRating, ignoreCase: true, out var risk))
@@ -341,7 +348,6 @@ public class ExcelUploadController : ControllerBase
                     ComplianceStatus        = row.ComplianceStatus,
                     LapsesType              = row.LapsesType,
                     NoOfInstances           = row.NoOfInstances,
-                    AuditBaseDate           = auditBaseDate,
                     Year                    = year,
                     CreatedAt               = DateTime.UtcNow,
                     UpdatedAt               = DateTime.UtcNow

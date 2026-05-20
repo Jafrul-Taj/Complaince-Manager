@@ -73,7 +73,6 @@ public class FindingService : IFindingService
             ComplianceStatus = request.ComplianceStatus,
             LapsesType = request.LapsesType,
             NoOfInstances = request.NoOfInstances,
-            AuditBaseDate = request.AuditBaseDate,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -99,7 +98,6 @@ public class FindingService : IFindingService
         finding.ComplianceStatus = request.ComplianceStatus;
         finding.LapsesType = request.LapsesType;
         finding.NoOfInstances = request.NoOfInstances;
-        finding.AuditBaseDate = request.AuditBaseDate;
         finding.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -153,7 +151,7 @@ public class FindingService : IFindingService
         ComplianceStatus = f.ComplianceStatus,
         LapsesType = f.LapsesType,
         NoOfInstances = f.NoOfInstances,
-        AuditBaseDate = f.AuditBaseDate,
+        AuditBaseDate = f.ComplianceAuditReport?.AuditBaseDate,
         RectificationRemarks = f.RectificationRemarks,
         RectifiedAt = f.RectifiedAt,
         Year = f.Year,

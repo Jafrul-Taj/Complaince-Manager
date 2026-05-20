@@ -7,6 +7,7 @@ public class ComplianceAuditReport
     public int BranchId { get; set; }
     public int Year { get; set; }
     public string AuditTeamLeadId { get; set; } = string.Empty;
+    public DateTime? AuditBaseDate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
