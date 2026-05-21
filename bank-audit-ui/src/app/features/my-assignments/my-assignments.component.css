@@ -70,8 +70,8 @@
 }
 
 .col-badge {
-  background: #e8eaf6;
-  color: #3949ab;
+  background: #ffebee;
+  color: #c62828;
   font-size: 11px;
   font-weight: 700;
   min-width: 22px;
@@ -103,8 +103,8 @@
 .year-label {
   font-size: 13px;
   font-weight: 700;
-  color: #3949ab;
-  background: #e8eaf6;
+  color: #c62828;
+  background: #ffebee;
   padding: 2px 12px;
   border-radius: 12px;
   letter-spacing: 0.5px;
@@ -136,8 +136,8 @@
 }
 
 .report-card:hover {
-  border-color: #9fa8da;
-  box-shadow: 0 4px 18px rgba(63,81,181,0.09);
+  border-color: #ef9a9a;
+  box-shadow: 0 4px 18px rgba(198,40,40,0.09);
 }
 
 /* top meta row */
@@ -151,15 +151,15 @@
 .card-year {
   font-size: 20px;
   font-weight: 800;
-  color: #1a237e;
+  color: #b71c1c;
   line-height: 1;
 }
 
 .card-branch-code {
   font-size: 10px;
   font-weight: 700;
-  color: #3949ab;
-  background: #e8eaf6;
+  color: #c62828;
+  background: #ffebee;
   padding: 2px 7px;
   border-radius: 8px;
   letter-spacing: 0.4px;
@@ -271,8 +271,8 @@
 }
 
 .branch-item:hover {
-  border-color: #90caf9;
-  box-shadow: 0 2px 10px rgba(25,118,210,0.09);
+  border-color: #ef9a9a;
+  box-shadow: 0 2px 10px rgba(198,40,40,0.09);
 }
 
 .branch-item-left {
@@ -286,8 +286,8 @@
 .branch-pill {
   font-size: 10px;
   font-weight: 700;
-  color: #1976d2;
-  background: #e3f2fd;
+  color: #c62828;
+  background: #ffebee;
   padding: 3px 8px;
   border-radius: 8px;
   letter-spacing: 0.3px;
@@ -318,7 +318,7 @@
 .enter-link {
   font-size: 11px;
   font-weight: 600;
-  color: #1976d2;
+  color: #c62828;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -374,7 +374,7 @@
 .stats-num {
   font-size: 20px;
   font-weight: 800;
-  color: #1a237e;
+  color: #b71c1c;
 }
 
 .stats-lbl {

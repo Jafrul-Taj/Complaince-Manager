@@ -75,6 +75,7 @@ public class ComplianceAuditReportService : IComplianceAuditReportService
             BranchId = request.BranchId,
             Year = request.Year,
             AuditTeamLeadId = request.AuditTeamLeadId,
+            AuditBaseDate = request.AuditBaseDate,
             CreatedAt = DateTime.UtcNow
         };
         _db.ComplianceAuditReports.Add(report);
@@ -85,6 +86,18 @@ public class ComplianceAuditReportService : IComplianceAuditReportService
         await _db.Entry(report).Reference(r => r.AuditTeamLead).LoadAsync();
 
         return ToDto(report);
+    }
+
+    public async Task<ComplianceAuditReportDto?> UpdateAsync(int id, UpdateComplianceAuditReportRequest request)
+    {
+        var report = await _db.ComplianceAuditReports.FindAsync(id);
+        if (report is null) return null;
+
+        report.AuditTeamLeadId = request.AuditTeamLeadId;
+        report.AuditBaseDate   = request.AuditBaseDate;
+
+        await _db.SaveChangesAsync();
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -111,6 +124,7 @@ public class ComplianceAuditReportService : IComplianceAuditReportService
         TotalFindings = r.Findings.Count,
         PendingFindings = r.Findings.Count(f => f.ComplianceStatus == "Unrectified"),
         RectifiedFindings = r.Findings.Count(f => f.ComplianceStatus == "Rectified"),
+        AuditBaseDate = r.AuditBaseDate,
         CreatedAt = r.CreatedAt
     };
 }

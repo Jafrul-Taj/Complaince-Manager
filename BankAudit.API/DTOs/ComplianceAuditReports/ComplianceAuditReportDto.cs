@@ -15,5 +15,6 @@ public class ComplianceAuditReportDto
     public int TotalFindings { get; set; }
     public int PendingFindings { get; set; }
     public int RectifiedFindings { get; set; }
+    public DateTime? AuditBaseDate { get; set; }
     public DateTime CreatedAt { get; set; }
 }

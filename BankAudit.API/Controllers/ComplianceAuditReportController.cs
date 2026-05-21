@@ -49,6 +49,14 @@ public class ComplianceAuditReportController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "ComplianceOfficer")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateComplianceAuditReportRequest request)
+    {
+        var result = await _service.UpdateAsync(id, request);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "ComplianceOfficer,Operator")]
     public async Task<IActionResult> Delete(int id)

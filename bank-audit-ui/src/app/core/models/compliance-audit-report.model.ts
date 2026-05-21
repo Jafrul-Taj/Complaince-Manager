@@ -9,6 +9,7 @@ export interface ComplianceAuditReport {
   auditTeamLeadId: string;
   auditTeamLeadName: string;
   auditTeamLeadDesignation: string;
+  auditBaseDate?: string;
   totalFindings: number;
   pendingFindings: number;
   rectifiedFindings: number;
@@ -19,4 +20,10 @@ export interface CreateComplianceAuditReportRequest {
   branchId: number;
   year: number;
   auditTeamLeadId: string;
+  auditBaseDate: string;
+}
+
+export interface UpdateComplianceAuditReportRequest {
+  auditTeamLeadId: string;
+  auditBaseDate: string;
 }

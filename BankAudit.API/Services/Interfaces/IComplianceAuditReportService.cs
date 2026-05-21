@@ -9,5 +9,6 @@ public interface IComplianceAuditReportService
     Task<List<ComplianceAuditReportDto>> GetByBranchAsync(int branchId);
     Task<ComplianceAuditReportDto?> GetByIdAsync(int id);
     Task<ComplianceAuditReportDto> CreateAsync(CreateComplianceAuditReportRequest request, int officerId);
+    Task<ComplianceAuditReportDto?> UpdateAsync(int id, UpdateComplianceAuditReportRequest request);
     Task<bool> DeleteAsync(int id);
 }

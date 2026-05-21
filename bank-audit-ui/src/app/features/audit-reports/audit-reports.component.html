@@ -1,5 +1,6 @@
 <div class="page-container">
-  <!-- Page Header -->
+
+  <!-- ── Page Header ──────────────────────────────────────────── -->
   <div class="page-header">
     <div class="header-left">
       <button mat-icon-button (click)="goBack()" class="back-btn" title="Back to My Branches">
@@ -16,56 +17,135 @@
       </div>
     </div>
 
-    <button mat-raised-button color="primary" (click)="toggleCreateForm()">
+    <button mat-raised-button class="btn-new-report" (click)="toggleCreateForm()">
       <mat-icon>{{ showCreateForm ? 'close' : 'add' }}</mat-icon>
       {{ showCreateForm ? 'Cancel' : 'New Report' }}
     </button>
   </div>
 
-  <!-- Create Report Form -->
+  <!-- ── Create / Edit Form ───────────────────────────────────── -->
   @if (showCreateForm) {
-    <mat-card class="create-form-card">
-      <mat-card-title>Create New Compliance Audit Report</mat-card-title>
+    <mat-card class="create-form-card" [class.edit-mode]="isEditMode">
       <mat-card-content>
-        <form [formGroup]="form" (ngSubmit)="createReport()" class="create-form">
-          <mat-form-field appearance="outline">
-            <mat-label>Audit Year</mat-label>
-            <mat-select formControlName="year">
-              @for (y of years; track y) {
-                <mat-option [value]="y">{{ y }}</mat-option>
+
+        <!-- Form header -->
+        <div class="form-card-header">
+          <mat-icon class="form-header-icon">{{ isEditMode ? 'edit_note' : 'assignment_add' }}</mat-icon>
+          <div class="form-header-text">
+            <span class="form-header-title">
+              {{ isEditMode ? 'Edit Audit Report' : 'Create New Compliance Audit Report' }}
+            </span>
+            @if (isEditMode && editingReport) {
+              <span class="form-header-sub">
+                {{ editingReport.branchName }} · {{ editingReport.year }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="saveReport()" class="create-form">
+
+          <!-- ── Audit Year (create only) ── -->
+          @if (!isEditMode) {
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Audit Year</mat-label>
+              <mat-select formControlName="year">
+                @for (y of years; track y) {
+                  <mat-option [value]="y">{{ y }}</mat-option>
+                }
+              </mat-select>
+              @if (yearCtrl.touched && yearCtrl.hasError('required')) {
+                <mat-error>Year is required</mat-error>
               }
-            </mat-select>
+            </mat-form-field>
+          }
+
+          <!-- ── Audit Team Lead (searchable autocomplete) ── -->
+          <mat-form-field appearance="outline" class="form-field lead-field"
+                          [class.has-selection]="selectedLead !== null">
+            <mat-label>Audit Team Lead</mat-label>
+            <mat-icon matPrefix class="lead-prefix-icon">person_search</mat-icon>
+
+            <input matInput
+                   [formControl]="leadSearchCtrl"
+                   [matAutocomplete]="leadAuto"
+                   placeholder="Type to search by name or designation…"
+                   (blur)="leadCtrl.markAsTouched()">
+
+            <mat-autocomplete #leadAuto
+                              [displayWith]="displayEmployee"
+                              (optionSelected)="selectLead($event)"
+                              autoActiveFirstOption>
+              @for (e of filteredLeads; track e.id) {
+                <mat-option [value]="e" class="lead-option-item">
+                  <div class="lead-option">
+                    <span class="lead-opt-name">{{ e.name }}</span>
+                    <span class="lead-opt-desg">{{ e.designation }}</span>
+                  </div>
+                </mat-option>
+              }
+              @empty {
+                <mat-option disabled class="lead-empty-opt">
+                  <span class="lead-empty-text">No matching Audit/RBIA employees</span>
+                </mat-option>
+              }
+            </mat-autocomplete>
+
+            <!-- Clear button when an employee is selected -->
+            @if (selectedLead) {
+              <button matSuffix mat-icon-button type="button"
+                      class="lead-clear-btn" (click)="clearLead()"
+                      matTooltip="Clear selection" tabindex="-1">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+
+            @if (leadCtrl.touched && leadCtrl.hasError('required')) {
+              <mat-error>Please select an Audit Team Lead</mat-error>
+            }
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Audit Team Lead (ICCD Employee)</mat-label>
-            <mat-select formControlName="auditTeamLeadId">
-              @for (e of employees; track e.id) {
-                <mat-option [value]="e.id">{{ e.name }} — {{ e.designation }}</mat-option>
-              }
-            </mat-select>
+          <!-- ── Audit Base Date ── -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Audit Base Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="auditBaseDate"
+                   placeholder="DD/MM/YYYY" readonly>
+            <mat-datepicker-toggle matSuffix [for]="picker">
+              <mat-icon matDatepickerToggleIcon>calendar_today</mat-icon>
+            </mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            @if (dateCtrl.touched && dateCtrl.hasError('required')) {
+              <mat-error>Audit Base Date is required</mat-error>
+            }
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || saving">
-            <mat-icon>save</mat-icon>
-            {{ saving ? 'Creating...' : 'Create Report' }}
+          <!-- ── Submit ── -->
+          <button mat-raised-button class="btn-submit" type="submit"
+                  [disabled]="form.invalid || saving">
+            @if (saving) {
+              <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+            } @else {
+              <mat-icon>{{ isEditMode ? 'save' : 'add_circle' }}</mat-icon>
+            }
+            {{ saving ? (isEditMode ? 'Saving…' : 'Creating…') : (isEditMode ? 'Save Changes' : 'Create Report') }}
           </button>
+
         </form>
       </mat-card-content>
     </mat-card>
   }
 
-  <!-- Reports List -->
+  <!-- ── Loading / Empty / Grid ───────────────────────────────── -->
   @if (loading) {
     <div class="loading-state">
       <mat-spinner diameter="40"></mat-spinner>
-      <p>Loading reports...</p>
+      <p>Loading reports…</p>
     </div>
   } @else if (!branchId) {
     <div class="empty-state">
       <mat-icon class="empty-icon">warning</mat-icon>
       <p>No branch selected. Please go back and select a branch.</p>
-      <button mat-raised-button color="primary" (click)="goBack()">Go Back</button>
+      <button mat-raised-button class="btn-back-empty" (click)="goBack()">Go Back</button>
     </div>
   } @else if (reports.length === 0) {
     <div class="empty-state">
@@ -76,15 +156,28 @@
   } @else {
     <div class="reports-grid">
       @for (r of reports; track r.id) {
-        <mat-card class="report-card">
+        <mat-card class="report-card" [class.editing-card]="editingReport?.id === r.id">
           <mat-card-content>
+
+            <!-- Header: year badge + edit + delete -->
             <div class="report-header">
               <div class="year-badge">{{ r.year }}</div>
-              <button mat-icon-button color="warn" (click)="deleteReport(r)" title="Delete Report" class="delete-btn">
-                <mat-icon>delete_outline</mat-icon>
-              </button>
+              <div class="card-actions">
+                <button mat-icon-button class="edit-btn"
+                        (click)="openEditForm(r)"
+                        [class.active]="editingReport?.id === r.id"
+                        matTooltip="{{ editingReport?.id === r.id ? 'Cancel edit' : 'Edit report' }}">
+                  <mat-icon>{{ editingReport?.id === r.id ? 'edit_off' : 'edit' }}</mat-icon>
+                </button>
+                <button mat-icon-button class="delete-btn"
+                        (click)="deleteReport(r)"
+                        matTooltip="Delete report">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
             </div>
 
+            <!-- Audit Lead -->
             <div class="lead-info">
               <mat-icon class="lead-icon">person</mat-icon>
               <div>
@@ -93,8 +186,18 @@
               </div>
             </div>
 
+            <!-- Audit Base Date -->
+            <div class="audit-date-row">
+              <mat-icon class="date-icon">calendar_today</mat-icon>
+              <span class="date-label">Audit Base Date:</span>
+              <span class="date-value" [class.date-not-set]="!r.auditBaseDate">
+                {{ formatDate(r.auditBaseDate) }}
+              </span>
+            </div>
+
             <mat-divider style="margin: 12px 0"></mat-divider>
 
+            <!-- Findings summary -->
             <div class="findings-summary">
               <div class="stat">
                 <span class="stat-num">{{ r.totalFindings }}</span>
@@ -121,10 +224,11 @@
                 <span class="progress-pct">{{ rectifiedPercent(r) }}%</span>
               </div>
             }
+
           </mat-card-content>
 
           <mat-card-actions>
-            <button mat-raised-button color="primary" (click)="openFindings(r)">
+            <button mat-raised-button class="btn-findings" (click)="openFindings(r)">
               <mat-icon>fact_check</mat-icon>
               {{ r.totalFindings === 0 ? 'Add Findings' : 'View Findings' }}
             </button>
@@ -133,4 +237,5 @@
       }
     </div>
   }
+
 </div>

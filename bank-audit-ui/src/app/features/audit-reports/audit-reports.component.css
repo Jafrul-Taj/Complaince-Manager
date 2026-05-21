@@ -1,5 +1,6 @@
 .page-container { padding: 24px; }
 
+/* ── Page Header ─────────────────────────────────────────── */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -19,8 +20,8 @@
 
 .branch-code {
   display: inline-block;
-  background: #e8eaf6;
-  color: #3949ab;
+  background: #ffebee;
+  color: #c62828;
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
@@ -29,26 +30,146 @@
   letter-spacing: 0.5px;
 }
 
-.page-header h1 { margin: 2px 0 2px; font-size: 24px; }
+.page-header h1 { margin: 2px 0; font-size: 24px; }
 .subtitle { color: #666; font-size: 13px; }
 
-/* Create Form */
+.btn-new-report {
+  background: #d32f2f !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+.btn-new-report:hover { background: #b71c1c !important; }
+
+/* ── Form Card ───────────────────────────────────────────── */
 .create-form-card {
   margin-bottom: 24px;
-  border-left: 4px solid #1976d2;
+  border-left: 4px solid #d32f2f;
+  border-radius: 10px !important;
+  transition: border-color 0.2s;
 }
+
+.create-form-card.edit-mode {
+  border-left-color: #1565c0;
+}
+
+.form-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+.form-header-icon {
+  color: #d32f2f;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.edit-mode .form-header-icon { color: #1565c0; }
+
+.form-header-text { display: flex; flex-direction: column; gap: 2px; }
+.form-header-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+.form-header-sub   { font-size: 12px; color: #888; }
 
 .create-form {
   display: flex;
   gap: 16px;
-  align-items: flex-end;
+  align-items: flex-start;
   flex-wrap: wrap;
-  padding-top: 12px;
 }
 
-.create-form mat-form-field { min-width: 220px; flex: 1; }
+.form-field { min-width: 220px; flex: 1; }
 
-/* Loading / Empty States */
+/* Override Material outline color when focused */
+.create-form ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-floating-label {
+  color: #d32f2f !important;
+}
+.create-form ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.create-form ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.create-form ::ng-deep .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: #d32f2f !important;
+}
+
+/* ── Autocomplete lead field ─────────────────────────────── */
+.lead-prefix-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #aaa;
+  margin-right: 4px;
+}
+
+.lead-field.has-selection .lead-prefix-icon { color: #2e7d32; }
+
+/* Outline turns green when a valid employee is selected */
+.lead-field.has-selection ::ng-deep .mdc-notched-outline__leading,
+.lead-field.has-selection ::ng-deep .mdc-notched-outline__notch,
+.lead-field.has-selection ::ng-deep .mdc-notched-outline__trailing {
+  border-color: #2e7d32 !important;
+}
+.lead-field.has-selection ::ng-deep .mat-mdc-floating-label { color: #2e7d32 !important; }
+
+.lead-clear-btn {
+  color: #aaa !important;
+  width: 32px;
+  height: 32px;
+}
+.lead-clear-btn:hover { color: #d32f2f !important; }
+.lead-clear-btn mat-icon { font-size: 18px; }
+
+/* Autocomplete panel option layout */
+.lead-option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0;
+}
+
+.lead-opt-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+  line-height: 1.3;
+}
+
+.lead-opt-desg {
+  font-size: 11px;
+  color: #888;
+  line-height: 1.2;
+}
+
+.lead-empty-text {
+  font-size: 13px;
+  color: #bbb;
+  font-style: italic;
+}
+
+/* ── Submit button ───────────────────────────────────────── */
+.btn-submit {
+  background: #d32f2f !important;
+  color: #fff !important;
+  font-weight: 600;
+  height: 56px;
+  padding: 0 24px;
+  align-self: flex-start;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-mode .btn-submit { background: #1565c0 !important; }
+.edit-mode .btn-submit:hover { background: #0d47a1 !important; }
+
+.btn-submit:disabled { opacity: 0.55 !important; cursor: not-allowed; }
+.btn-spinner { display: inline-block; }
+
+/* ── Loading / Empty ─────────────────────────────────────── */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -65,9 +186,15 @@
 }
 
 .empty-icon { font-size: 56px; width: 56px; height: 56px; color: #ccc; margin-bottom: 12px; }
-.empty-sub { font-size: 13px; margin-top: 4px; }
+.empty-sub  { font-size: 13px; margin-top: 4px; }
 
-/* Reports Grid */
+.btn-back-empty {
+  background: #d32f2f !important;
+  color: #fff !important;
+  margin-top: 16px;
+}
+
+/* ── Reports Grid ────────────────────────────────────────── */
 .reports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -75,41 +202,74 @@
 }
 
 .report-card {
-  border-radius: 10px;
-  transition: box-shadow 0.2s;
+  border-radius: 10px !important;
+  transition: box-shadow 0.2s, border 0.2s;
+  border: 1px solid transparent;
 }
+
 .report-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 
+.report-card.editing-card {
+  border: 2px solid #1565c0;
+  box-shadow: 0 0 0 4px rgba(21,101,192,0.1);
+}
+
+/* ── Card Header ─────────────────────────────────────────── */
 .report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .year-badge {
-  background: #1976d2;
-  color: white;
+  background: #d32f2f;
+  color: #fff;
   font-size: 18px;
   font-weight: 700;
   padding: 4px 16px;
   border-radius: 20px;
 }
 
+.card-actions { display: flex; align-items: center; gap: 2px; }
+
+.edit-btn  { color: #bbb !important; }
+.edit-btn:hover  { color: #1565c0 !important; }
+.edit-btn.active { color: #1565c0 !important; }
+
 .delete-btn { color: #ccc !important; }
 .delete-btn:hover { color: #e53935 !important; }
 
+/* ── Lead Info ───────────────────────────────────────────── */
 .lead-info {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
+}
+
+.lead-icon  { color: #888; font-size: 20px; width: 20px; height: 20px; }
+.lead-name  { font-weight: 600; font-size: 14px; color: #1a1a1a; }
+.lead-title { font-size: 12px; color: #666; }
+
+/* ── Audit Date ──────────────────────────────────────────── */
+.audit-date-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff8f8;
+  border: 1px solid #ffcdd2;
+  border-radius: 7px;
+  padding: 7px 12px;
   margin-bottom: 4px;
 }
 
-.lead-icon { color: #555; font-size: 20px; width: 20px; height: 20px; }
-.lead-name { font-weight: 600; font-size: 14px; color: #1a1a1a; }
-.lead-title { font-size: 12px; color: #666; }
+.date-icon    { font-size: 15px; width: 15px; height: 15px; color: #d32f2f; flex-shrink: 0; }
+.date-label   { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0; }
+.date-value   { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+.date-not-set { color: #bbb; font-weight: 400; font-style: italic; }
 
+/* ── Findings Summary ────────────────────────────────────── */
 .findings-summary {
   display: flex;
   gap: 0;
@@ -129,12 +289,13 @@
 }
 .stat:last-child { border-right: none; }
 
-.stat-num { font-size: 20px; font-weight: 700; color: #333; line-height: 1; }
+.stat-num   { font-size: 20px; font-weight: 700; color: #333; line-height: 1; }
 .stat-label { font-size: 10px; color: #888; margin-top: 4px; text-transform: uppercase; }
 
-.stat.pending .stat-num { color: #e65100; }
+.stat.pending .stat-num   { color: #e65100; }
 .stat.rectified .stat-num { color: #2e7d32; }
 
+/* ── Progress Bar ────────────────────────────────────────── */
 .progress-bar-wrap {
   display: flex;
   align-items: center;
@@ -151,7 +312,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background: #1976d2;
+  background: #d32f2f;
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -159,10 +320,22 @@
 .progress-bar-fill.complete { background: #2e7d32; }
 .progress-pct { font-size: 12px; color: #666; min-width: 36px; text-align: right; }
 
+/* ── Card Actions ────────────────────────────────────────── */
 mat-card-actions { padding: 8px 16px 12px !important; }
 
+.btn-findings {
+  background: #d32f2f !important;
+  color: #fff !important;
+  font-weight: 600;
+  width: 100%;
+}
+.btn-findings:hover { background: #b71c1c !important; }
+
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .reports-grid { grid-template-columns: 1fr; }
-  .create-form { flex-direction: column; }
-  .create-form mat-form-field { min-width: 100%; }
+  .page-container { padding: 14px; }
+  .reports-grid   { grid-template-columns: 1fr; }
+  .create-form    { flex-direction: column; }
+  .form-field     { min-width: 100%; }
+  .btn-submit     { width: 100%; justify-content: center; }
 }
