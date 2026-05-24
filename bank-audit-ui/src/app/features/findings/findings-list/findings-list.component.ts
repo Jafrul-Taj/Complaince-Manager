@@ -180,8 +180,14 @@ export class FindingsListComponent implements OnInit, AfterViewInit {
 
   openForm(finding?: AuditFinding) {
     const ref = this.dialog.open(FindingFormComponent, {
-      width: '620px',
-      data: { finding, reportId: finding?.complianceAuditReportId ?? this.reportId }
+      width: '98vw',
+      maxWidth: '98vw',
+      height: '94vh',
+      panelClass: 'grid-editor-panel',
+      data: {
+        reportId: finding?.complianceAuditReportId ?? this.reportId,
+        findings: this.allFindings.length ? this.allFindings : undefined
+      }
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }

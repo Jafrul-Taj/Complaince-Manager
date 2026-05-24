@@ -27,6 +27,17 @@ html, body {
   background-color: #f5f5f5;
 }
 
+/* Grid editor dialog — remove Material's default padding */
+.grid-editor-panel .mat-mdc-dialog-container {
+  padding: 0 !important;
+  overflow: hidden;
+}
+.grid-editor-panel .mdc-dialog__surface {
+  padding: 0 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
 .page-container {
   padding: 24px;
   max-width: 1400px;
