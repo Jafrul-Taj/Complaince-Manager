@@ -90,10 +90,17 @@ public class ExcelUploadController : ControllerBase
                     int rowNum = row.RowNumber();
                     try
                     {
-                        var c1  = SafeString(row.Cell(1));  // ComplianceOfficerName
-                        var c2  = SafeString(row.Cell(2));  // BranchName
-                        var c3  = SafeString(row.Cell(3));  // BranchCode
-                        var c5  = SafeString(row.Cell(5));  // SlNo
+                        // for existing format
+                        //var c1  = SafeString(row.Cell(1));  // ComplianceOfficerName
+                        //var c2  = SafeString(row.Cell(2));  // BranchName
+                        //var c3  = SafeString(row.Cell(3));  // BranchCode
+                        //var c5  = SafeString(row.Cell(5));  // SlNo
+
+
+                        var c1 = SafeString(row.Cell(4));  // ComplianceOfficerName
+                        var c2 = SafeString(row.Cell(2));  // BranchName
+                        var c3 = SafeString(row.Cell(3));  // BranchCode
+                        var c5 = SafeString(row.Cell(1));  // SlNo
 
                         // Skip only when ALL anchor columns are blank
                         if (string.IsNullOrWhiteSpace(c1) &&
@@ -107,25 +114,45 @@ public class ExcelUploadController : ControllerBase
 
                         records.Add(new ExcelFileData
                         {
-                            ComplianceOfficerName   = c1,
-                            BranchName              = c2,
-                            BranchCode              = c3,
-                            AuditTeamLeader         = SafeString(row.Cell(4)),
-                            SlNo                    = c5,
-                            NameOfCustomer          = SafeString(row.Cell(6)),
-                            DetailsOfIrregularities = SafeString(row.Cell(7)),
-                            AuditBaseDate           = SafeString(row.Cell(8)),
-                            Year                    = SafeString(row.Cell(9)),
-                            LapsesOriginated        = SafeString(row.Cell(10)),
-                            Area                    = SafeString(row.Cell(11)),
-                            Category                = SafeString(row.Cell(12)),
-                            RiskRating              = SafeString(row.Cell(13)),
-                            LapsesType              = SafeString(row.Cell(14)),
-                            NoOfInstances           = SafeString(row.Cell(15)),
-                            ComplianceStatus        = SafeString(row.Cell(16)),
-                            OriginalFileName        = fileName,
-                            UploadedById            = uploadedBy,
-                            UploadedAt              = uploadedAt
+                            //ComplianceOfficerName   = c1,
+                            //BranchName              = c2,
+                            //BranchCode              = c3,
+                            //AuditTeamLeader         = SafeString(row.Cell(4)),
+                            //SlNo                    = c5,
+                            //NameOfCustomer          = SafeString(row.Cell(6)),
+                            //DetailsOfIrregularities = SafeString(row.Cell(7)),
+                            //AuditBaseDate           = SafeString(row.Cell(8)),
+                            //Year                    = SafeString(row.Cell(9)),
+                            //LapsesOriginated        = SafeString(row.Cell(10)),
+                            //Area                    = SafeString(row.Cell(11)),
+                            //Category                = SafeString(row.Cell(12)),
+                            //RiskRating              = SafeString(row.Cell(13)),
+                            //LapsesType              = SafeString(row.Cell(14)),
+                            //NoOfInstances           = SafeString(row.Cell(15)),
+                            //ComplianceStatus        = SafeString(row.Cell(16)),
+                            //OriginalFileName        = fileName,
+                            //UploadedById            = uploadedBy,
+                            //UploadedAt              = uploadedAt
+
+                            ComplianceOfficerName = c1,
+                            BranchName = c2,
+                            BranchCode = c3,
+                            AuditTeamLeader = SafeString(row.Cell(5)),
+                            SlNo = c5,
+                            NameOfCustomer = SafeString(row.Cell(15)),
+                            DetailsOfIrregularities = SafeString(row.Cell(17)),
+                            AuditBaseDate = SafeString(row.Cell(13)),
+                            Year = SafeString(row.Cell(6)),
+                            LapsesOriginated = SafeString(row.Cell(16)),
+                            Area = SafeString(row.Cell(7)),
+                            Category = SafeString(row.Cell(8)),
+                            RiskRating = SafeString(row.Cell(11)),
+                            LapsesType = SafeString(row.Cell(9)),
+                            NoOfInstances = SafeString(row.Cell(10)),
+                            ComplianceStatus = SafeString(row.Cell(12)),
+                            OriginalFileName = fileName,
+                            UploadedById = uploadedBy,
+                            UploadedAt = uploadedAt
                         });
                         imported++;
                     }
@@ -243,7 +270,8 @@ public class ExcelUploadController : ControllerBase
             try
             {
                 // resolve officer
-                var officerName = ExtractNameBeforeComma(row.ComplianceOfficerName);
+                //var officerName = ExtractNameBeforeComma(row.ComplianceOfficerName);
+                var officerName = row.ComplianceOfficerName; // Downloaded format with full name is provided without comma
                 var officer = FindUser(users, officerName);
                 if (officer is null)
                 {
@@ -267,6 +295,7 @@ public class ExcelUploadController : ControllerBase
 
                 // resolve team lead
                 var leadName = ExtractNameBeforeComma(row.AuditTeamLeader);
+                //var leadName = row.AuditTeamLeader; // Downloaded format with full name is provided without comma
                 var lead = FindEmployee(employees, leadName);
                 if (lead is null)
                 {
