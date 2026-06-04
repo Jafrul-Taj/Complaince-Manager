@@ -1,20 +1,35 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
-import { roleGuard } from './core/guards/role.guard';
+import { authGuard }       from './core/guards/auth.guard';
+import { roleGuard }       from './core/guards/role.guard';
+import { loggedInGuard }   from './core/guards/logged-in.guard';
+import { preventBackGuard } from './core/guards/prevent-back.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
+
+  // ── Public: login ─────────────────────────────────────────────────────────
+  // loggedInGuard redirects already-authenticated users back to their home page
+  // so the login screen is never shown while a valid session exists.
   {
     path: 'login',
     title: 'Login',
+    canActivate: [loggedInGuard],
     loadComponent: () =>
       import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
+
+  // ── Protected: entire /app tree ───────────────────────────────────────────
+  // canActivate:   authGuard   → redirects unauthenticated users to /login
+  // canDeactivate: preventBackGuard → shows confirmation dialog when the
+  //                browser back-button (or any navigation) tries to leave
+  //                /app/** entirely (e.g. land on /login or an external URL).
+  //                Does NOT fire for navigation between /app/* child routes.
   {
     path: 'app',
     loadComponent: () =>
       import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
-    canActivate: [authGuard],
+    canActivate:   [authGuard],
+    canDeactivate: [preventBackGuard],
     children: [
       {
         path: 'users',
@@ -91,5 +106,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
+
+  // Catch-all: unknown paths → login (loggedInGuard will redirect if authed)
   { path: '**', redirectTo: 'login' }
 ];

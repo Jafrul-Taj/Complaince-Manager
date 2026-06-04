@@ -12,7 +12,7 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
 
   // Redirect to the role's home page
   switch (userRole) {
-    case 'Operator':          router.navigate(['/app/users']); break;
+    case 'Operator':          router.navigate(['/app/dashboard']); break;
     case 'ComplianceOfficer': router.navigate(['/app/findings']); break;
     default:                  router.navigate(['/app/dashboard']); break;
   }
