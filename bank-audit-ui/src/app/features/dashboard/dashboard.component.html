@@ -6,6 +6,21 @@
       <h1 class="dash-title">Compliance Dashboard</h1>
       <p class="dash-sub">Compliance Analytics &amp; Reporting</p>
     </div>
+
+    <!-- Export All button — top-right of header -->
+    <button class="btn-export-all"
+            [class.btn-export-busy]="exporting"
+            [disabled]="exporting"
+            (click)="exportFindings()"
+            title="Export all findings matching current filters to Excel (.xlsx)">
+      @if (exporting) {
+        <span class="export-spinner"></span>
+        <span>Exporting…</span>
+      } @else {
+        <span class="material-icons export-icon">download</span>
+        <span>Export All</span>
+      }
+    </button>
   </div>
 
   <!-- ── Filter Bar (sticky) ──────────────────────────────────── -->

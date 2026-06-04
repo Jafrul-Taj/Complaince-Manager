@@ -4,9 +4,58 @@
 .dash-wrap { padding: 12px 16px 28px; background: #fdf8f8; min-height: 100vh; }
 
 /* ── Header ──────────────────────────────────────────────────── */
-.dash-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 10px; }
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .dash-title  { font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 2px; letter-spacing: -0.3px; }
 .dash-sub    { font-size: 12px; color: #6b7280; margin: 0; }
+
+/* ── Export All button ───────────────────────────────────────── */
+.btn-export-all {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            6px;
+  padding:        8px 16px;
+  border:         none;
+  border-radius:  8px;
+  background:     linear-gradient(135deg, #1d6f42 0%, #217346 100%);
+  color:          #fff;
+  font-size:      13px;
+  font-weight:    600;
+  font-family:    inherit;
+  cursor:         pointer;
+  letter-spacing: 0.2px;
+  box-shadow:     0 2px 6px rgba(29,111,66,.35);
+  transition:     background 0.18s, box-shadow 0.18s, opacity 0.18s;
+  white-space:    nowrap;
+  flex-shrink:    0;
+}
+.btn-export-all:hover:not(:disabled) {
+  background:  linear-gradient(135deg, #185c38 0%, #1e643f 100%);
+  box-shadow:  0 4px 12px rgba(29,111,66,.45);
+}
+.btn-export-all:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(29,111,66,.3);
+}
+.btn-export-all:disabled,
+.btn-export-busy {
+  opacity: 0.72;
+  cursor:  not-allowed;
+}
+
+.export-icon { font-size: 18px; width: 18px; height: 18px; }
+
+/* Inline spinner (pure CSS — no extra dependency) */
+.export-spinner {
+  display:       inline-block;
+  width:         15px;
+  height:        15px;
+  border:        2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  flex-shrink:   0;
+  animation:     export-spin 0.75s linear infinite;
+}
+@keyframes export-spin { to { transform: rotate(360deg); } }
 
 /* ── Filter Bar ──────────────────────────────────────────────── */
 .filter-bar {

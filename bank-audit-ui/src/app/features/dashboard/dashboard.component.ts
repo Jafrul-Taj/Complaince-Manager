@@ -3,17 +3,34 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { forkJoin } from 'rxjs';
+import { forkJoin, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
+import * as XLSX from 'xlsx';
 import { DashboardService, FilterParams } from '../../core/services/dashboard.service';
 import { BranchService } from '../../core/services/branch.service';
 import { Branch } from '../../core/models/branch.model';
 
+// Exact column order required in the exported file
+const EXPORT_COLS = [
+  'Sl No', 'Branch', 'Branch Code', 'Officer', 'Audit Leader',
+  'Year', 'Area', 'Category', 'Lapses Type', 'Instances',
+  'Risk', 'Status', 'Audit Date', 'Rectified At',
+  'Customers', 'Lapses Originated', 'Finding Details', 'Rectification Remarks'
+] as const;
+
+// Column widths (characters) matching the order above
+const EXPORT_COL_WIDTHS = [8, 26, 13, 22, 22, 6, 10, 36, 15, 10, 10, 13, 14, 14, 26, 26, 52, 32];
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatTabsModule, NgApexchartsModule],
+  imports: [
+    CommonModule, FormsModule,
+    MatProgressSpinnerModule, MatTabsModule, MatSnackBarModule,
+    NgApexchartsModule
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -21,6 +38,7 @@ export class DashboardComponent implements OnInit {
   private dashSvc   = inject(DashboardService);
   private branchSvc = inject(BranchService);
   private router    = inject(Router);
+  private snack     = inject(MatSnackBar);
 
   // ── Reference data ──────────────────────────────────────────────
   yearOptions        = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -61,6 +79,7 @@ export class DashboardComponent implements OnInit {
 
   // ── Data ─────────────────────────────────────────────────────────
   loading        = false;
+  exporting      = false;   // separate flag so export spinner doesn't block the page
   kpis: any      = null;
   riskChart: any = {};
   branchSummary:     any[] = [];
@@ -141,7 +160,7 @@ export class DashboardComponent implements OnInit {
     return labels.slice(0, maxShow).join(', ') + ` +${labels.length - maxShow} more`;
   }
 
-  // ── All-IDs getters for Select All (arrow fns not allowed in templates) ──
+  // ── All-IDs getters ──────────────────────────────────────────────
   get allBranchIds():  number[] { return this.branches.map(b => b.id); }
   get allOfficerIds(): number[] { return this.officers.map(o => o.officerId); }
 
@@ -191,9 +210,7 @@ export class DashboardComponent implements OnInit {
     else { arr.splice(0); arr.push(...all); }
   }
 
-  isAllSelected<T>(arr: T[], all: T[]): boolean {
-    return arr.length === all.length;
-  }
+  isAllSelected<T>(arr: T[], all: T[]): boolean { return arr.length === all.length; }
 
   // ── FilterParams getter ──────────────────────────────────────────
   get filterParams(): FilterParams {
@@ -236,7 +253,6 @@ export class DashboardComponent implements OnInit {
   loadAll() {
     this.loading = true;
     const fp = this.filterParams;
-    console.log('Loading with filters:', fp);
     forkJoin({
       kpis:     this.dashSvc.getKpis(fp),
       risk:     this.dashSvc.getRiskDistribution(fp),
@@ -261,6 +277,80 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // ── Export All ───────────────────────────────────────────────────
+  async exportFindings() {
+    if (this.exporting) return;
+    this.exporting = true;
+
+    try {
+      const raw = await firstValueFrom(this.dashSvc.getExportData(this.filterParams));
+
+      if (!raw?.length) {
+        this.snack.open('No findings to export with the current filters.', 'OK', { duration: 4000 });
+        return;
+      }
+
+      // ── Map API response to exact column order ──────────────────
+      const rows = raw.map(f => ({
+        'Sl No':                f.slNo              ?? '',
+        'Branch':               f.branchName        ?? '',
+        'Branch Code':          f.branchCode        ?? '',
+        'Officer':              f.officerName       ?? '',
+        'Audit Leader':         f.auditLeaderName   ?? '',
+        'Year':                 f.year              ?? '',
+        'Area':                 f.findingArea       ?? '',
+        'Category':             f.category          ?? '',
+        'Lapses Type':          f.lapsesType        ?? '',
+        'Instances':            f.noOfInstances     ?? '',
+        'Risk':                 f.riskRating        ?? '',
+        'Status':               f.complianceStatus  ?? '',
+        'Audit Date':           f.auditBaseDate     ?? '',
+        'Rectified At':         f.rectifiedAt       ?? '',
+        'Customers':            f.nameOfCustomers   ?? '',
+        'Lapses Originated':    f.lapsesOriginated  ?? '',
+        'Finding Details':      f.findingDetails    ?? '',
+        'Rectification Remarks':f.rectificationRemarks ?? '',
+      }));
+
+      // ── Build workbook ──────────────────────────────────────────
+      const ws = XLSX.utils.json_to_sheet(rows, { header: EXPORT_COLS as unknown as string[] });
+
+      // Set column widths
+      ws['!cols'] = EXPORT_COL_WIDTHS.map(wch => ({ wch }));
+
+      // Freeze the header row so it stays visible while scrolling
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Findings');
+
+      // ── Generate timestamped filename ───────────────────────────
+      const now    = new Date();
+      const pad    = (n: number) => String(n).padStart(2, '0');
+      const datePart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const timePart = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      const filename = `Findings_Export_${datePart}_${timePart}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+
+      this.snack.open(
+        `✓ Exported ${raw.length.toLocaleString()} findings to ${filename}`,
+        'OK',
+        { duration: 5000, panelClass: 'snack-success' }
+      );
+
+    } catch (err: any) {
+      console.error('Export failed:', err);
+      const msg = err?.status === 404
+        ? 'Export endpoint not found. Please check the backend is running.'
+        : 'Export failed. Please try again or contact support.';
+      this.snack.open(msg, 'Dismiss', { duration: 8000, panelClass: 'snack-error' });
+    } finally {
+      this.exporting = false;
+    }
+  }
+
+  // ── Charts & helpers ─────────────────────────────────────────────
   private buildRiskChart(data: any[]) {
     const order  = ['High', 'Medium', 'Low'];
     const sorted = order.map(r => data.find((d: any) => d.riskRating === r)).filter(Boolean);
