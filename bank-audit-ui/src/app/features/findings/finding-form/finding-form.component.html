@@ -1,17 +1,39 @@
-<div class="grid-dialog">
+<div class="grid-dialog" [ngClass]="'density-' + rowDensity">
 
   <!-- ── Header ───────────────────────────────────────────────────────────── -->
   <div class="grid-header">
     <div class="grid-title">
       <mat-icon class="title-icon">grid_on</mat-icon>
-      <span>Audit Findings — Spreadsheet Editor</span>
-      <span class="row-count">{{ visibleRows.length }} row{{ visibleRows.length !== 1 ? 's' : '' }}</span>
+      <span>Audit Findings Editor</span>
+      <span class="row-count">
+        {{ filteredRows.length }}{{ hasActiveFilters ? ' / ' + visibleRows.length : '' }}
+        row{{ filteredRows.length !== 1 ? 's' : '' }}
+      </span>
       @if (pendingDeleteCount > 0) {
         <span class="deleted-count">{{ pendingDeleteCount }} pending delete</span>
       }
+      @if (hasActiveFilters) {
+        <span class="filter-badge">
+          <mat-icon class="filter-badge-icon">filter_list</mat-icon>
+          {{ hiddenRowCount }} hidden
+        </span>
+      }
     </div>
     <div class="header-actions">
-      <button class="header-btn" (click)="exportCsv()" matTooltip="Export CSV (UTF-8 BOM)">
+      <!-- Density toggle -->
+      <button class="header-btn density-btn"
+              [matTooltip]="'Row density: ' + rowDensity + ' (click to cycle)'"
+              (click)="cycleDensity()">
+        <mat-icon>{{ rowDensity === 'compact' ? 'density_small' : rowDensity === 'comfortable' ? 'density_medium' : 'density_large' }}</mat-icon>
+      </button>
+      <!-- Legend toggle -->
+      <button class="header-btn" [matTooltip]="legendVisible ? 'Hide shortcuts' : 'Show shortcuts'"
+              (click)="legendVisible = !legendVisible">
+        <mat-icon>keyboard</mat-icon>
+      </button>
+      <!-- Export -->
+      <button class="header-btn" (click)="exportCsv()"
+              [matTooltip]="hasActiveFilters ? 'Export filtered rows as CSV' : 'Export all rows as CSV'">
         <mat-icon>download</mat-icon>
       </button>
       <button class="close-btn" (click)="dialogRef.close()" title="Close">
@@ -37,6 +59,7 @@
   <!-- ── Toolbar ───────────────────────────────────────────────────────────── -->
   <div class="grid-toolbar">
     <div class="toolbar-left">
+
       <button mat-stroked-button class="btn-add" (click)="addRow()" matTooltip="Add row (Ctrl+Shift++)">
         <mat-icon>add</mat-icon> Add Row
       </button>
@@ -61,7 +84,16 @@
         @if (selectedCount > 0) { ({{ selectedCount }}) }
       </button>
 
-      <!-- Bulk edit bar -->
+      <!-- Clear filters button — shown only when filters are active -->
+      @if (hasActiveFilters) {
+        <button mat-stroked-button class="btn-clear-filter" (click)="clearAllFilters()"
+                matTooltip="Clear all column filters">
+          <mat-icon>filter_list_off</mat-icon>
+          Clear Filters ({{ columnFilters.size }})
+        </button>
+      }
+
+      <!-- Bulk edit bar — shown when rows are checkbox-selected -->
       @if (selectedCount > 0) {
         <div class="bulk-bar">
           <span class="bulk-label">
@@ -91,16 +123,18 @@
           </button>
         </div>
       }
+
     </div>
 
     <div class="toolbar-right">
+      <!-- Status info inline with toolbar -->
+      <span class="toolbar-sel-info">
+        @if (selectionInfo) { {{ selectionInfo }} }
+      </span>
       <button mat-raised-button class="btn-save" [disabled]="saving" (click)="saveAll()"
               matTooltip="Save all changes (Ctrl+S)">
-        @if (saving) {
-          <mat-icon class="spin">sync</mat-icon>
-        } @else {
-          <mat-icon>save</mat-icon>
-        }
+        @if (saving) { <mat-icon class="spin">sync</mat-icon> }
+        @else { <mat-icon>save</mat-icon> }
         {{ saving ? 'Saving…' : 'Save All' }}
       </button>
     </div>
@@ -118,41 +152,158 @@
     </div>
   }
 
-  <!-- ── Legend ────────────────────────────────────────────────────────────── -->
-  <div class="legend-bar">
-    <span class="legend-item new-item">■ New</span>
-    <span class="legend-item mod-item">■ Modified</span>
-    <span class="legend-item sel-item">■ Selected</span>
-    <span class="legend-sep">|</span>
-    <span class="legend-tip"><kbd>↑↓←→</kbd> Navigate</span>
-    <span class="legend-tip"><kbd>Tab</kbd> Right</span>
-    <span class="legend-tip"><kbd>Enter</kbd> Down</span>
-    <span class="legend-tip"><kbd>Shift+↑↓←→</kbd> Extend sel.</span>
-    <span class="legend-tip"><kbd>Ctrl+C</kbd> Copy</span>
-    <span class="legend-tip"><kbd>Ctrl+V</kbd> Paste</span>
-    <span class="legend-tip"><kbd>Ctrl+Z/Y</kbd> Undo/Redo</span>
-    <span class="legend-tip"><kbd>Ctrl+D</kbd> Fill↓</span>
-    <span class="legend-tip"><kbd>Ctrl+S</kbd> Save</span>
-  </div>
+  <!-- ── Legend bar (collapsible) ──────────────────────────────────────────── -->
+  @if (legendVisible) {
+    <div class="legend-bar">
+      <span class="legend-item new-item">■ New</span>
+      <span class="legend-item mod-item">■ Modified</span>
+      <span class="legend-item sel-item">■ Selected</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-tip"><kbd>↑↓←→</kbd> Navigate</span>
+      <span class="legend-tip"><kbd>Tab/Enter</kbd> Right/Down</span>
+      <span class="legend-tip"><kbd>Shift+Arrow</kbd> Extend sel.</span>
+      <span class="legend-tip"><kbd>Ctrl+C/V</kbd> Copy/Paste</span>
+      <span class="legend-tip"><kbd>Ctrl+Z/Y</kbd> Undo/Redo</span>
+      <span class="legend-tip"><kbd>Ctrl+D</kbd> Fill↓</span>
+      <span class="legend-tip"><kbd>Ctrl+S</kbd> Save</span>
+      <span class="legend-tip"><kbd>Del</kbd> Clear cells</span>
+      <span class="legend-tip legend-tip-filter">
+        <mat-icon style="font-size:12px;width:12px;height:12px;vertical-align:middle">filter_list</mat-icon>
+        Click column filter icon to filter
+      </span>
+    </div>
+  }
 
   <!-- ── Grid ──────────────────────────────────────────────────────────────── -->
   <div class="grid-scroll">
     <table class="grid-table">
       <thead>
         <tr>
-          <!-- Fixed columns: checkbox, row-number -->
           <th class="col-check th-fixed">
-            <input type="checkbox" [checked]="allSelected" (change)="toggleAll()" title="Select all" />
+            <input type="checkbox" [checked]="allSelected" (change)="toggleAll()" title="Select all visible rows" />
           </th>
           <th class="col-num th-fixed">#</th>
 
-          <!-- Dynamic data columns -->
+          <!-- Dynamic data columns with filter button + panel -->
           @for (col of COLS; track col.key; let ci = $index) {
             <th [style.width.px]="col.width" [style.min-width.px]="col.minWidth"
-                class="th-data" [attr.data-thidx]="ci">
+                class="th-data" [attr.data-thidx]="ci"
+                [class.col-filtered]="isFilterActive(ci)">
               <div class="th-inner">
-                <span class="th-label">{{ col.label }}</span>
+                <span class="th-label" [title]="col.label">{{ col.label }}</span>
+
+                <!-- Filter toggle button -->
+                <button class="filter-btn"
+                        [class.filter-btn-active]="isFilterActive(ci)"
+                        [matTooltip]="isFilterActive(ci) ? 'Filter active — click to edit' : 'Filter: ' + col.label"
+                        (click)="openFilterPanel(ci, $event)">
+                  <mat-icon>{{ isFilterActive(ci) ? 'filter_alt' : 'filter_list' }}</mat-icon>
+                </button>
+
                 <div class="resize-handle" (mousedown)="startResize($event, ci)"></div>
+
+                <!-- ── Filter panel ───────────────────────────────────────── -->
+                @if (filterPanels[ci] && filterPanels[ci].open) {
+                  <div class="filter-panel" (click)="$event.stopPropagation()">
+
+                    <!-- Panel header -->
+                    <div class="fp-header">
+                      <span class="fp-title">
+                        <mat-icon class="fp-title-icon">filter_alt</mat-icon>
+                        {{ col.label }}
+                      </span>
+                      <div class="fp-mode-tabs">
+                        <button class="fp-tab" [class.fp-tab-active]="filterPanels[ci].mode === 'values'"
+                                (click)="filterPanels[ci].mode = 'values'">Values</button>
+                        <button class="fp-tab" [class.fp-tab-active]="filterPanels[ci].mode === 'text'"
+                                (click)="filterPanels[ci].mode = 'text'">Text</button>
+                      </div>
+                    </div>
+
+                    <!-- Values mode -->
+                    @if (filterPanels[ci].mode === 'values') {
+                      <div class="fp-search-wrap">
+                        <mat-icon class="fp-search-icon">search</mat-icon>
+                        <input class="fp-search"
+                               [(ngModel)]="filterPanels[ci].searchTerm"
+                               (ngModelChange)="filterPanelSearch(ci)"
+                               placeholder="Search values…" />
+                      </div>
+
+                      <div class="fp-bulk-actions">
+                        <button class="fp-link-btn" (click)="toggleAllPendingValues(ci, true)">
+                          Select All
+                        </button>
+                        <span class="fp-link-sep">·</span>
+                        <button class="fp-link-btn" (click)="toggleAllPendingValues(ci, false)">
+                          Clear All
+                        </button>
+                        <span class="fp-value-count">
+                          {{ filterPanels[ci].pendingChecked.size }}/{{ filterPanels[ci].allValues.length }}
+                        </span>
+                      </div>
+
+                      <!-- Select all checkbox -->
+                      <label class="fp-value-item fp-select-all">
+                        <input type="checkbox"
+                               [checked]="isAllPendingChecked(ci)"
+                               [indeterminate]="isSomePendingChecked(ci)"
+                               (change)="toggleAllPendingValues(ci, $any($event.target).checked)" />
+                        <span class="fp-val-text fp-select-all-label">(Select All)</span>
+                      </label>
+
+                      <div class="fp-value-list">
+                        @for (val of filterPanels[ci].displayedValues; track val) {
+                          <label class="fp-value-item">
+                            <input type="checkbox"
+                                   [checked]="filterPanels[ci].pendingChecked.has(val)"
+                                   (change)="togglePendingValue(ci, val)" />
+                            <span class="fp-val-text"
+                                  [ngClass]="col.key === 'riskRating' ? riskClass(val)
+                                            : col.key === 'complianceStatus' ? statusClass(val) : ''">
+                              {{ val || '(empty)' }}
+                            </span>
+                          </label>
+                        }
+                        @empty {
+                          <div class="fp-empty">No values match search</div>
+                        }
+                      </div>
+                    }
+
+                    <!-- Text filter mode -->
+                    @if (filterPanels[ci].mode === 'text') {
+                      <div class="fp-text-body">
+                        <label class="fp-field-label">Operator</label>
+                        <select class="fp-operator" [(ngModel)]="filterPanels[ci].pendingOperator">
+                          @for (op of OPERATORS; track op.value) {
+                            <option [value]="op.value">{{ op.label }}</option>
+                          }
+                        </select>
+                        <label class="fp-field-label">Value</label>
+                        <input class="fp-text-input"
+                               [(ngModel)]="filterPanels[ci].pendingText"
+                               placeholder="Enter filter text…" />
+                      </div>
+                    }
+
+                    <!-- Footer actions -->
+                    <div class="fp-footer">
+                      <button class="fp-btn fp-btn-clear" (click)="clearFilter(ci)">
+                        <mat-icon>clear</mat-icon> Clear
+                      </button>
+                      <button class="fp-btn fp-btn-cancel" (click)="filterPanels[ci].open = false">
+                        Cancel
+                      </button>
+                      <button class="fp-btn fp-btn-apply" (click)="applyFilter(ci)">
+                        <mat-icon>check</mat-icon> Apply
+                      </button>
+                    </div>
+
+                  </div>
+                }
+                <!-- ── end filter panel ───────────────────────────────────── -->
+
               </div>
             </th>
           }
@@ -161,7 +312,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (row of visibleRows; track row._key; let i = $index) {
+        @for (row of filteredRows; track row._key; let i = $index) {
           <tr [attr.data-rowidx]="i"
               [class.row-new]="row.rowState === 'new'"
               [class.row-modified]="row.rowState === 'modified'"
@@ -268,7 +419,7 @@
             <!-- Row actions -->
             <td class="col-act td-fixed">
               <div class="row-acts">
-                <button class="act-btn dup" (click)="duplicateRow(row)" title="Duplicate row (Ctrl+D)">
+                <button class="act-btn dup" (click)="duplicateRow(row)" title="Duplicate row">
                   <mat-icon>content_copy</mat-icon>
                 </button>
                 <button class="act-btn del" (click)="removeRow(row)" title="Delete row">
@@ -283,9 +434,14 @@
         @empty {
           <tr>
             <td [attr.colspan]="COLS.length + 3" class="empty-row">
-              <mat-icon class="empty-icon">table_rows</mat-icon>
+              <mat-icon class="empty-icon">{{ hasActiveFilters ? 'filter_list_off' : 'table_rows' }}</mat-icon>
               <br />
-              No rows. Click <strong>Add Row</strong> or paste data from Excel (Ctrl+V).
+              @if (hasActiveFilters) {
+                No rows match the active filters.
+                <button class="empty-clear-btn" (click)="clearAllFilters()">Clear all filters</button>
+              } @else {
+                No rows. Click <strong>Add Row</strong> or paste data from Excel (Ctrl+V).
+              }
             </td>
           </tr>
         }
@@ -297,19 +453,17 @@
   <!-- ── Status bar ─────────────────────────────────────────────────────────── -->
   <div class="status-bar">
     <span class="status-counts">
-      <span class="sc-total">{{ visibleRows.length }} rows</span>
-      @if (pendingDeleteCount > 0) {
-        <span class="sc-del">· {{ pendingDeleteCount }} pending delete</span>
-      }
-      @if (selectedKeys.size > 0) {
-        <span class="sc-sel">· {{ selectedKeys.size }} checkbox-selected</span>
-      }
+      <span class="sc-total">
+        {{ filteredRows.length }}{{ hasActiveFilters ? ' of ' + visibleRows.length : '' }} rows
+      </span>
+      @if (pendingDeleteCount > 0) { <span class="sc-del">· {{ pendingDeleteCount }} pending delete</span> }
+      @if (selectedKeys.size > 0) { <span class="sc-sel">· {{ selectedKeys.size }} checkbox-selected</span> }
     </span>
-    <span class="status-sel-info">
-      @if (selectionInfo) { {{ selectionInfo }} }
+    <span class="status-density">
+      Density: <strong>{{ rowDensity }}</strong>
     </span>
     <span class="status-shortcuts">
-      <kbd>Ctrl+Z</kbd> Undo &nbsp;<kbd>Ctrl+Y</kbd> Redo
+      <kbd>Ctrl+Z</kbd> Undo &nbsp;<kbd>Ctrl+Y</kbd> Redo &nbsp;<kbd>Ctrl+S</kbd> Save
     </span>
   </div>
 
