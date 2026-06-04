@@ -10,10 +10,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FindingService } from '../../../core/services/finding.service';
-import { AuditFinding, CreateFindingRequest, UpdateFindingRequest, RiskRating } from '../../../core/models/finding.model';
+import {
+  AuditFinding, CreateFindingRequest, UpdateFindingRequest, RiskRating
+} from '../../../core/models/finding.model';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+// ── Category list ─────────────────────────────────────────────────────────────
 export const CATEGORIES: string[] = [
   '3rd Party Affidavit/Consent/Identification',
   'Acceptance of Sanction/Renewal/ Time Extension Letter/Ho Sanction',
@@ -131,6 +134,21 @@ export const CATEGORIES: string[] = [
   'WO Bill Deduction/WPC/IPC/Progress/Sepeate Ac',
 ];
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+export type DataKey =
+  'slNo' | 'nameOfCustomers' | 'findingDetails' | 'category' |
+  'lapsesOriginated' | 'noOfInstances' | 'findingArea' |
+  'riskRating' | 'complianceStatus' | 'lapsesType';
+
+export interface ColDef {
+  key: DataKey;
+  label: string;
+  width: number;
+  minWidth: number;
+  type: 'text' | 'textarea' | 'category' | 'select';
+  options?: string[];
+}
+
 export interface GridFinding {
   _key: string;
   id?: number;
@@ -150,54 +168,123 @@ export interface GridFinding {
   _filteredCats: string[];
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
 @Component({
   selector: 'app-finding-form',
   standalone: true,
   imports: [
     CommonModule, FormsModule, MatDialogModule,
     MatButtonModule, MatIconModule, MatSnackBarModule,
-    MatProgressBarModule, MatTooltipModule
+    MatProgressBarModule, MatTooltipModule,
   ],
   templateUrl: './finding-form.component.html',
-  styleUrl: './finding-form.component.css'
+  styleUrl: './finding-form.component.css',
 })
 export class FindingFormComponent implements OnInit, OnDestroy {
-  rows: GridFinding[] = [];
-  selectedKeys = new Set<string>();
-  saving = false;
-  saveProgress = 0;
-  saveResults: { saved: number; failed: number } | null = null;
 
+  // ── Grid data ──────────────────────────────────────────────────────────────
+  rows: GridFinding[] = [];
+
+  // ── Column definitions ─────────────────────────────────────────────────────
+  readonly COLS: ColDef[] = [
+    { key: 'slNo',            label: 'SL No',             width: 70,  minWidth: 50,  type: 'text' },
+    { key: 'nameOfCustomers', label: 'Name of Customers', width: 160, minWidth: 100, type: 'text' },
+    { key: 'findingDetails',  label: 'Finding Details',   width: 260, minWidth: 150, type: 'textarea' },
+    { key: 'category',        label: 'Category',          width: 220, minWidth: 150, type: 'category' },
+    { key: 'lapsesOriginated',label: 'Lapses Originated', width: 150, minWidth: 90,  type: 'text' },
+    { key: 'noOfInstances',   label: 'No of Instances',   width: 90,  minWidth: 60,  type: 'text' },
+    { key: 'findingArea',     label: 'Area',              width: 80,  minWidth: 60,  type: 'select',
+      options: ['AML', 'Credit', 'GB', 'TFO'] },
+    { key: 'riskRating',      label: 'Risk Rating',       width: 90,  minWidth: 70,  type: 'select',
+      options: ['High', 'Medium', 'Low'] },
+    { key: 'complianceStatus',label: 'Status',            width: 110, minWidth: 80,  type: 'select',
+      options: ['Rectified', 'Unrectified', 'Transfer'] },
+    { key: 'lapsesType',      label: 'Lapses Type',       width: 110, minWidth: 80,  type: 'select',
+      options: ['Operational', 'Documentation'] },
+  ];
+
+  readonly BULK_FIELDS = [
+    { value: 'findingArea',       label: 'Finding Area' },
+    { value: 'riskRating',        label: 'Risk Rating' },
+    { value: 'complianceStatus',  label: 'Status' },
+    { value: 'lapsesType',        label: 'Lapses Type' },
+    { value: 'lapsesOriginated',  label: 'Lapses Originated' },
+  ];
+
+  // ── Active cell & selection ────────────────────────────────────────────────
+  activeRow = -1;
+  activeCol = -1;
+  selStartRow = -1;
+  selStartCol = -1;
+  selEndRow   = -1;
+  selEndCol   = -1;
+
+  // ── Formula bar ───────────────────────────────────────────────────────────
+  formulaBarValue = '';
+
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
+  private undoStack: string[] = [];
+  private redoStack: string[] = [];
+  private preFocusSnap: string | null = null;
+
+  // ── Bulk edit ─────────────────────────────────────────────────────────────
+  selectedKeys = new Set<string>();
   bulkField = '';
   bulkValue = '';
 
-  dragActive = false;
-  dragSrcIdx = -1;
-  dragSrcRow: GridFinding | null = null;
-  dragCurIdx = -1;
+  // ── Save state ────────────────────────────────────────────────────────────
+  saving       = false;
+  saveProgress = 0;
+  saveResults: { saved: number; failed: number } | null = null;
 
+  // ── Fill handle drag ──────────────────────────────────────────────────────
+  dragActive  = false;
+  dragSrcIdx  = -1;
+  dragSrcRow: GridFinding | null = null;
+  dragCurIdx  = -1;
+
+  // ── Column resize ─────────────────────────────────────────────────────────
+  private resizingCol = -1;
+
+  // ── Misc ──────────────────────────────────────────────────────────────────
   private _keyCounter = 0;
   private pasteHandler!: (e: ClipboardEvent) => void;
 
-  readonly AREAS = ['AML', 'Credit', 'GB', 'TFO'];
-  readonly RISK_RATINGS = ['High', 'Medium', 'Low'];
-  readonly STATUSES = ['Rectified', 'Unrectified', 'Transfer'];
-  readonly LAPSES_TYPES = ['Operational', 'Documentation'];
-  readonly ALL_CATS = CATEGORIES;
-  readonly BULK_FIELDS = [
-    { value: 'findingArea',      label: 'Finding Area' },
-    { value: 'riskRating',       label: 'Risk Rating' },
-    { value: 'complianceStatus', label: 'Status' },
-    { value: 'lapsesType',       label: 'Lapses Type' },
-    { value: 'lapsesOriginated', label: 'Lapses Originated' },
-  ];
+  // ── Computed ──────────────────────────────────────────────────────────────
+  get visibleRows(): GridFinding[] {
+    return this.rows.filter(r => r.rowState !== 'deleted');
+  }
+
+  get allSelected(): boolean {
+    const v = this.visibleRows;
+    return v.length > 0 && v.every(r => this.selectedKeys.has(r._key));
+  }
+
+  get selectedCount(): number { return this.selectedKeys.size; }
+
+  get pendingDeleteCount(): number {
+    return this.rows.filter(r => r.rowState === 'deleted').length;
+  }
+
+  get selectionInfo(): string {
+    if (this.selStartRow < 0 || this.selStartCol < 0) return '';
+    const r1 = Math.min(this.selStartRow, this.selEndRow) + 1;
+    const r2 = Math.max(this.selStartRow, this.selEndRow) + 1;
+    const c1 = Math.min(this.selStartCol, this.selEndCol) + 1;
+    const c2 = Math.max(this.selStartCol, this.selEndCol) + 1;
+    if (r1 === r2 && c1 === c2) return `Row ${r1}, Col ${c1}`;
+    return `R${r1}:R${r2} × C${c1}:C${c2} · ${(r2-r1+1) * (c2-c1+1)} cells`;
+  }
+
+  get canUndo(): boolean { return this.undoStack.length > 0; }
+  get canRedo(): boolean { return this.redoStack.length > 0; }
 
   constructor(
     public dialogRef: MatDialogRef<FindingFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { reportId: number; findings?: AuditFinding[] },
     private findingSvc: FindingService,
     private snack: MatSnackBar,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {
     dialogRef.updateSize('98vw', '94vh');
   }
@@ -208,7 +295,7 @@ export class FindingFormComponent implements OnInit, OnDestroy {
     } else {
       this.addRow();
     }
-    this.pasteHandler = (e: ClipboardEvent) => this.handlePaste(e);
+    this.pasteHandler = (e: ClipboardEvent) => this.handleSystemPaste(e);
     document.addEventListener('paste', this.pasteHandler);
   }
 
@@ -216,26 +303,18 @@ export class FindingFormComponent implements OnInit, OnDestroy {
     document.removeEventListener('paste', this.pasteHandler);
   }
 
-  private nextKey(): string {
-    return `k${++this._keyCounter}`;
-  }
+  // ── Row factory ───────────────────────────────────────────────────────────
+  private nextKey() { return `k${++this._keyCounter}`; }
 
   private fromFinding(f: AuditFinding): GridFinding {
     return {
-      _key: this.nextKey(),
-      id: f.id,
-      slNo: f.slNo ?? '',
-      nameOfCustomers: f.nameOfCustomers ?? '',
-      findingDetails: f.findingDetails ?? '',
-      category: f.category ?? '',
-      lapsesOriginated: f.lapsesOriginated ?? '',
-      noOfInstances: f.noOfInstances ?? '',
-      findingArea: f.findingArea ?? '',
-      riskRating: f.riskRating ?? 'Medium',
-      complianceStatus: f.complianceStatus ?? 'Unrectified',
-      lapsesType: f.lapsesType ?? '',
-      rowState: 'unchanged',
-      _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES
+      _key: this.nextKey(), id: f.id,
+      slNo: f.slNo ?? '', nameOfCustomers: f.nameOfCustomers ?? '',
+      findingDetails: f.findingDetails ?? '', category: f.category ?? '',
+      lapsesOriginated: f.lapsesOriginated ?? '', noOfInstances: f.noOfInstances ?? '',
+      findingArea: f.findingArea ?? '', riskRating: f.riskRating ?? 'Medium',
+      complianceStatus: f.complianceStatus ?? 'Unrectified', lapsesType: f.lapsesType ?? '',
+      rowState: 'unchanged', _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES,
     };
   }
 
@@ -245,142 +324,305 @@ export class FindingFormComponent implements OnInit, OnDestroy {
       slNo: '', nameOfCustomers: '', findingDetails: '', category: '',
       lapsesOriginated: '', noOfInstances: '', findingArea: '',
       riskRating: 'Medium', complianceStatus: 'Unrectified', lapsesType: '',
-      rowState: 'new',
-      _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES
+      rowState: 'new', _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES,
     };
   }
 
-  // ── Row management ────────────────────────────────────────────────
-  get visibleRows(): GridFinding[] {
-    return this.rows.filter(r => r.rowState !== 'deleted');
+  private snapshot(): string {
+    // Exclude _filteredCats (large, derivable) to keep snapshots compact
+    return JSON.stringify(this.rows.map(({ _filteredCats, ...r }) => r));
   }
 
-  addRow() {
-    this.rows.push(this.makeEmptyRow());
+  private restoreSnapshot(json: string): GridFinding[] {
+    return (JSON.parse(json) as Omit<GridFinding, '_filteredCats'>[]).map(r => ({
+      ...r,
+      _filteredCats: CATEGORIES,
+      _catOpen: false,
+    } as GridFinding));
+  }
+
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
+  pushUndo() {
+    this.undoStack.push(this.snapshot());
+    if (this.undoStack.length > 20) this.undoStack.shift();
+    this.redoStack = [];
+  }
+
+  undo() {
+    if (!this.undoStack.length) {
+      this.snack.open('Nothing to undo', '', { duration: 1200 });
+      return;
+    }
+    this.redoStack.push(this.snapshot());
+    this.rows = this.restoreSnapshot(this.undoStack.pop()!);
+    this.syncFormulaBar();
+    this.cdr.detectChanges();
+  }
+
+  redo() {
+    if (!this.redoStack.length) {
+      this.snack.open('Nothing to redo', '', { duration: 1200 });
+      return;
+    }
+    this.undoStack.push(this.snapshot());
+    this.rows = this.restoreSnapshot(this.redoStack.pop()!);
+    this.syncFormulaBar();
+    this.cdr.detectChanges();
+  }
+
+  // ── Active cell ───────────────────────────────────────────────────────────
+  setActive(ri: number, ci: number, extend = false) {
+    const rows = this.visibleRows;
+    if (!rows.length) return;
+    ri = Math.max(0, Math.min(ri, rows.length - 1));
+    ci = Math.max(0, Math.min(ci, this.COLS.length - 1));
+    if (!extend) { this.selStartRow = ri; this.selStartCol = ci; }
+    this.selEndRow = ri; this.selEndCol = ci;
+    this.activeRow = ri; this.activeCol = ci;
+    this.syncFormulaBar();
+  }
+
+  navigate(ri: number, ci: number, extend = false) {
+    this.setActive(ri, ci, extend);
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(
+        `tr[data-rowidx="${this.activeRow}"] [data-colidx="${this.activeCol}"]`
+      );
+      el?.focus({ preventScroll: false });
+    });
+  }
+
+  syncFormulaBar() {
+    if (this.activeRow < 0 || this.activeCol < 0) { this.formulaBarValue = ''; return; }
+    const row = this.visibleRows[this.activeRow];
+    if (!row) { this.formulaBarValue = ''; return; }
+    this.formulaBarValue = String((row as any)[this.COLS[this.activeCol].key] ?? '');
+  }
+
+  onFormulaBarChange() {
+    if (this.activeRow < 0 || this.activeCol < 0) return;
+    const row = this.visibleRows[this.activeRow];
+    const col = this.COLS[this.activeCol];
+    if (row && col) {
+      (row as any)[col.key] = this.formulaBarValue;
+      this.markDirty(row);
+    }
+  }
+
+  onCellFocus(ri: number, ci: number) {
+    this.setActive(ri, ci);
+    this.preFocusSnap = this.snapshot();
+  }
+
+  onCellBlur() {
+    if (this.preFocusSnap) {
+      const cur = this.snapshot();
+      if (cur !== this.preFocusSnap) {
+        this.undoStack.push(this.preFocusSnap);
+        if (this.undoStack.length > 20) this.undoStack.shift();
+        this.redoStack = [];
+      }
+      this.preFocusSnap = null;
+    }
+    this.syncFormulaBar();
+  }
+
+  // ── Mouse selection ───────────────────────────────────────────────────────
+  onCellMouseDown(e: MouseEvent, ri: number, ci: number) {
+    if (e.button !== 0) return;
+    this.setActive(ri, ci, e.shiftKey);
+
+    const onMove = (me: MouseEvent) => {
+      const tr = (me.target as HTMLElement)?.closest<HTMLElement>('tr[data-rowidx]');
+      const td = (me.target as HTMLElement)?.closest<HTMLElement>('td[data-colidx]');
+      if (tr && td) {
+        const nr = parseInt(tr.getAttribute('data-rowidx') ?? String(ri));
+        const nc = parseInt(td.getAttribute('data-colidx') ?? String(ci));
+        const rows = this.visibleRows;
+        const nr2 = Math.max(0, Math.min(nr, rows.length - 1));
+        const nc2 = Math.max(0, Math.min(nc, this.COLS.length - 1));
+        if (nr2 !== this.selEndRow || nc2 !== this.selEndCol) {
+          this.selEndRow = nr2; this.selEndCol = nc2;
+          this.cdr.markForCheck();
+        }
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  isActive(ri: number, ci: number): boolean {
+    return this.activeRow === ri && this.activeCol === ci;
+  }
+
+  isInSelection(ri: number, ci: number): boolean {
+    if (this.selStartRow < 0) return false;
+    const r1 = Math.min(this.selStartRow, this.selEndRow);
+    const r2 = Math.max(this.selStartRow, this.selEndRow);
+    const c1 = Math.min(this.selStartCol, this.selEndCol);
+    const c2 = Math.max(this.selStartCol, this.selEndCol);
+    return ri >= r1 && ri <= r2 && ci >= c1 && ci <= c2;
+  }
+
+  // ── Copy ──────────────────────────────────────────────────────────────────
+  copySelection() {
+    if (this.selStartRow < 0) return;
+    const r1 = Math.min(this.selStartRow, this.selEndRow);
+    const r2 = Math.max(this.selStartRow, this.selEndRow);
+    const c1 = Math.min(this.selStartCol, this.selEndCol);
+    const c2 = Math.max(this.selStartCol, this.selEndCol);
+    const rows = this.visibleRows;
+    const lines: string[] = [];
+    for (let ri = r1; ri <= r2; ri++) {
+      const cells: string[] = [];
+      for (let ci = c1; ci <= c2; ci++) {
+        cells.push(String((rows[ri] as any)[this.COLS[ci].key] ?? ''));
+      }
+      lines.push(cells.join('\t'));
+    }
+    const tsv = lines.join('\n');
+    navigator.clipboard?.writeText(tsv).catch(() => {});
+    this.snack.open(`Copied ${r2-r1+1}×${c2-c1+1} cells`, 'OK', { duration: 1500 });
+  }
+
+  // ── System-clipboard paste (Ctrl+V → paste event) ────────────────────────
+  private handleSystemPaste(e: ClipboardEvent) {
+    const inGrid = !!document.activeElement?.closest('.grid-scroll');
+    const inFBar = document.activeElement?.classList.contains('formula-bar-input');
+    if (!inGrid && !inFBar) return;
+    if ((e.target as HTMLElement).classList.contains('cat-search-input')) return;
+
+    const text = e.clipboardData?.getData('text/plain') ?? '';
+    if (!text.trim()) return;
+    e.preventDefault();
+
+    const parsedRows = text.trim().split('\n').map(l => l.split('\t'));
+    this.pushUndo();
+
+    if (this.activeRow >= 0) {
+      // Paste at active cell position
+      const baseRow = this.activeRow;
+      const baseCol = this.activeCol >= 0
+        ? Math.min(this.selStartCol, this.selEndCol)
+        : 0;
+
+      parsedRows.forEach((cells, ri) => {
+        let targetRow = this.visibleRows[baseRow + ri];
+        if (!targetRow) {
+          targetRow = this.makeEmptyRow();
+          this.rows.push(targetRow);
+        }
+        cells.forEach((val, ci) => {
+          const col = this.COLS[baseCol + ci];
+          if (col) { (targetRow as any)[col.key] = val.trim(); this.markDirty(targetRow); }
+        });
+      });
+
+      this.selEndRow = baseRow + parsedRows.length - 1;
+      this.selEndCol = Math.min(baseCol + (parsedRows[0]?.length ?? 1) - 1, this.COLS.length - 1);
+    } else {
+      // Append as new rows
+      const keys: DataKey[] = ['slNo','nameOfCustomers','findingDetails','category',
+        'lapsesOriginated','noOfInstances','findingArea','riskRating','complianceStatus','lapsesType'];
+      parsedRows.forEach(cells => {
+        const row = this.makeEmptyRow();
+        cells.forEach((v, i) => { if (i < keys.length) (row as any)[keys[i]] = v.trim(); });
+        this.rows.push(row);
+      });
+    }
+
+    this.snack.open(`Pasted ${parsedRows.length} row(s)`, 'OK', { duration: 2000 });
+    this.cdr.detectChanges();
+  }
+
+  // ── Clear selection ───────────────────────────────────────────────────────
+  clearSelection() {
+    if (this.selStartRow < 0) return;
+    this.pushUndo();
+    const r1 = Math.min(this.selStartRow, this.selEndRow);
+    const r2 = Math.max(this.selStartRow, this.selEndRow);
+    const c1 = Math.min(this.selStartCol, this.selEndCol);
+    const c2 = Math.max(this.selStartCol, this.selEndCol);
+    const rows = this.visibleRows;
+    for (let ri = r1; ri <= r2; ri++) {
+      for (let ci = c1; ci <= c2; ci++) {
+        const col = this.COLS[ci];
+        if (rows[ri] && col.type !== 'select') {
+          (rows[ri] as any)[col.key] = '';
+          this.markDirty(rows[ri]);
+        }
+      }
+    }
+    this.syncFormulaBar();
+  }
+
+  // ── Row management ────────────────────────────────────────────────────────
+  addRow() { this.rows.push(this.makeEmptyRow()); }
+
+  insertRowAbove() {
+    this.pushUndo();
+    const newRow = this.makeEmptyRow();
+    if (this.activeRow >= 0) {
+      const visRow = this.visibleRows[this.activeRow];
+      if (visRow) {
+        const idx = this.rows.indexOf(visRow);
+        this.rows.splice(idx, 0, newRow);
+        return;
+      }
+    }
+    this.rows.unshift(newRow);
   }
 
   duplicateRow(row: GridFinding) {
+    this.pushUndo();
     const clone: GridFinding = {
       ...row, _key: this.nextKey(), id: undefined,
-      rowState: 'new', _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES
+      rowState: 'new', _catSearch: '', _catOpen: false, _filteredCats: CATEGORIES,
     };
-    const idx = this.rows.indexOf(row);
-    this.rows.splice(idx + 1, 0, clone);
+    this.rows.splice(this.rows.indexOf(row) + 1, 0, clone);
   }
 
   removeRow(row: GridFinding) {
-    if (row.id) {
-      row.rowState = 'deleted';
-    } else {
-      this.rows = this.rows.filter(r => r._key !== row._key);
-    }
+    this.pushUndo();
+    if (row.id) { row.rowState = 'deleted'; }
+    else { this.rows = this.rows.filter(r => r._key !== row._key); }
     this.selectedKeys.delete(row._key);
+    if (this.activeRow >= this.visibleRows.length) {
+      this.activeRow = this.visibleRows.length - 1;
+    }
   }
 
   markDirty(row: GridFinding) {
     if (row.rowState === 'unchanged') row.rowState = 'modified';
   }
 
-  // ── Selection ─────────────────────────────────────────────────────
-  toggleSelect(key: string) {
-    if (this.selectedKeys.has(key)) this.selectedKeys.delete(key);
-    else this.selectedKeys.add(key);
-  }
+  // ── Fill down (Ctrl+D) ────────────────────────────────────────────────────
+  fillDown() {
+    if (this.activeRow < 0) return;
+    const srcRow = this.visibleRows[this.activeRow];
+    if (!srcRow) return;
+    this.pushUndo();
 
-  toggleAll() {
-    if (this.allSelected) this.selectedKeys.clear();
-    else this.visibleRows.forEach(r => this.selectedKeys.add(r._key));
-  }
+    const r2 = this.selEndRow > this.selStartRow ? this.selEndRow : this.visibleRows.length - 1;
+    const c1 = Math.min(this.selStartCol, this.selEndCol);
+    const c2 = Math.max(this.selStartCol, this.selEndCol);
 
-  get allSelected(): boolean {
-    const v = this.visibleRows;
-    return v.length > 0 && v.every(r => this.selectedKeys.has(r._key));
-  }
-
-  get selectedCount(): number { return this.selectedKeys.size; }
-
-  deleteSelected() {
-    [...this.selectedKeys].forEach(k => {
-      const r = this.rows.find(x => x._key === k);
-      if (r) this.removeRow(r);
-    });
-  }
-
-  // ── Bulk edit ─────────────────────────────────────────────────────
-  applyBulkEdit() {
-    if (!this.bulkField || !this.bulkValue) return;
-    this.rows.forEach(r => {
-      if (this.selectedKeys.has(r._key) && r.rowState !== 'deleted') {
-        (r as any)[this.bulkField] = this.bulkValue;
-        this.markDirty(r);
+    for (let ri = this.activeRow + 1; ri <= r2; ri++) {
+      const row = this.visibleRows[ri];
+      if (!row) break;
+      for (let ci = c1; ci <= c2; ci++) {
+        const col = this.COLS[ci];
+        (row as any)[col.key] = (srcRow as any)[col.key];
+        this.markDirty(row);
       }
-    });
-    this.bulkField = '';
-    this.bulkValue = '';
-  }
-
-  // ── Category dropdown ─────────────────────────────────────────────
-  openCat(row: GridFinding, e: MouseEvent) {
-    e.stopPropagation();
-    const wasOpen = row._catOpen;
-    this.rows.forEach(r => { r._catOpen = false; });
-    if (!wasOpen) {
-      row._catSearch = '';
-      row._filteredCats = CATEGORIES;
-      row._catOpen = true;
-      setTimeout(() => {
-        const el = document.querySelector<HTMLInputElement>(
-          `.cat-search-input[data-rowkey="${row._key}"]`
-        );
-        el?.focus();
-      }, 30);
     }
   }
 
-  filterCat(row: GridFinding) {
-    const s = row._catSearch.toLowerCase();
-    row._filteredCats = s ? CATEGORIES.filter(c => c.toLowerCase().includes(s)) : CATEGORIES;
-  }
-
-  selectCat(row: GridFinding, cat: string, e: MouseEvent) {
-    e.stopPropagation();
-    row.category = cat;
-    row._catOpen = false;
-    this.markDirty(row);
-  }
-
-  @HostListener('document:click')
-  closeAllCats() {
-    if (this.rows.some(r => r._catOpen)) {
-      this.rows.forEach(r => { r._catOpen = false; r._catSearch = ''; r._filteredCats = CATEGORIES; });
-    }
-  }
-
-  // ── Clipboard paste ───────────────────────────────────────────────
-  private handlePaste(e: ClipboardEvent) {
-    if (!document.activeElement?.closest('.grid-scroll')) return;
-    const text = e.clipboardData?.getData('text/plain') ?? '';
-    if (!text.trim()) return;
-    e.preventDefault();
-
-    const cols = [
-      'slNo', 'nameOfCustomers', 'findingDetails', 'category',
-      'lapsesOriginated', 'noOfInstances', 'findingArea',
-      'riskRating', 'complianceStatus', 'lapsesType'
-    ];
-    const lines = text.trim().split('\n').filter(l => l.trim());
-    lines.forEach(line => {
-      const row = this.makeEmptyRow();
-      line.split('\t').forEach((v, i) => {
-        if (i < cols.length) (row as any)[cols[i]] = v.trim();
-      });
-      this.rows.push(row);
-    });
-    this.snack.open(`Pasted ${lines.length} row(s)`, 'OK', { duration: 2000 });
-    this.cdr.detectChanges();
-  }
-
-  // ── Drag fill ─────────────────────────────────────────────────────
+  // ── Fill handle (drag) ────────────────────────────────────────────────────
   startFill(e: MouseEvent, row: GridFinding, idx: number) {
     e.preventDefault();
     e.stopPropagation();
@@ -390,7 +632,7 @@ export class FindingFormComponent implements OnInit, OnDestroy {
     this.dragCurIdx = idx;
 
     const onMove = (me: MouseEvent) => {
-      const el = document.elementFromPoint(me.clientX, me.clientY)?.closest('[data-rowidx]');
+      const el = document.elementFromPoint(me.clientX, me.clientY)?.closest<HTMLElement>('[data-rowidx]');
       if (el) {
         const i = parseInt(el.getAttribute('data-rowidx') ?? String(idx));
         if (i !== this.dragCurIdx) { this.dragCurIdx = i; this.cdr.markForCheck(); }
@@ -411,16 +653,14 @@ export class FindingFormComponent implements OnInit, OnDestroy {
   }
 
   private applyFill(fromIdx: number, toIdx: number, src: GridFinding) {
+    this.pushUndo();
     const start = Math.min(fromIdx, toIdx);
-    const end = Math.max(fromIdx, toIdx);
-    const fields: (keyof GridFinding)[] = [
-      'slNo', 'nameOfCustomers', 'findingDetails', 'category',
-      'lapsesOriginated', 'noOfInstances', 'findingArea',
-      'riskRating', 'complianceStatus', 'lapsesType'
-    ];
+    const end   = Math.max(fromIdx, toIdx);
+    const keys: DataKey[] = ['slNo','nameOfCustomers','findingDetails','category',
+      'lapsesOriginated','noOfInstances','findingArea','riskRating','complianceStatus','lapsesType'];
     this.visibleRows.slice(start, end + 1).forEach(r => {
       if (r._key !== src._key) {
-        fields.forEach(f => (r as any)[f] = (src as any)[f]);
+        keys.forEach(k => { (r as any)[k] = (src as any)[k]; });
         this.markDirty(r);
       }
     });
@@ -433,35 +673,219 @@ export class FindingFormComponent implements OnInit, OnDestroy {
     return idx >= s && idx <= e;
   }
 
-  // ── Keyboard ──────────────────────────────────────────────────────
-  onCellKey(e: KeyboardEvent, rowIdx: number, colIdx: number) {
-    if (e.key === 'Enter' && !(e.target as HTMLElement).matches('textarea')) {
-      e.preventDefault();
-      const next = document.querySelector<HTMLElement>(
-        `[data-rowidx="${rowIdx + 1}"] [data-colidx="${colIdx}"]`
-      );
-      next?.focus();
-    }
-    if (e.ctrlKey && e.key === 'd') {
-      e.preventDefault();
-      const row = this.visibleRows[rowIdx];
-      if (row) this.applyFill(rowIdx, this.visibleRows.length - 1, row);
+  // ── Selection (checkbox) ──────────────────────────────────────────────────
+  toggleSelect(key: string) {
+    if (this.selectedKeys.has(key)) this.selectedKeys.delete(key);
+    else this.selectedKeys.add(key);
+  }
+
+  toggleAll() {
+    if (this.allSelected) this.selectedKeys.clear();
+    else this.visibleRows.forEach(r => this.selectedKeys.add(r._key));
+  }
+
+  deleteSelected() {
+    if (!this.selectedKeys.size) return;
+    const label = `Delete ${this.selectedKeys.size} row(s)?`;
+    if (!confirm(label)) return;
+    this.pushUndo();
+    [...this.selectedKeys].forEach(k => {
+      const r = this.rows.find(x => x._key === k);
+      if (r) { if (r.id) r.rowState = 'deleted'; else this.rows = this.rows.filter(x => x._key !== k); }
+    });
+    this.selectedKeys.clear();
+  }
+
+  // ── Bulk edit ─────────────────────────────────────────────────────────────
+  get bulkFieldDef(): ColDef | undefined {
+    return this.COLS.find(c => c.key === this.bulkField);
+  }
+
+  applyBulkEdit() {
+    if (!this.bulkField || !this.bulkValue) return;
+    this.pushUndo();
+    this.rows.forEach(r => {
+      if (this.selectedKeys.has(r._key) && r.rowState !== 'deleted') {
+        (r as any)[this.bulkField] = this.bulkValue;
+        this.markDirty(r);
+      }
+    });
+    this.bulkField = '';
+    this.bulkValue = '';
+  }
+
+  // ── Category dropdown ─────────────────────────────────────────────────────
+  openCat(row: GridFinding, e: MouseEvent) {
+    e.stopPropagation();
+    const wasOpen = row._catOpen;
+    this.rows.forEach(r => { r._catOpen = false; });
+    if (!wasOpen) {
+      row._catSearch = '';
+      row._filteredCats = CATEGORIES;
+      row._catOpen = true;
+      setTimeout(() => {
+        document.querySelector<HTMLInputElement>(
+          `.cat-search-input[data-rowkey="${row._key}"]`
+        )?.focus();
+      }, 30);
     }
   }
 
-  // ── Export ────────────────────────────────────────────────────────
+  filterCat(row: GridFinding) {
+    const s = row._catSearch.toLowerCase();
+    row._filteredCats = s ? CATEGORIES.filter(c => c.toLowerCase().includes(s)) : CATEGORIES;
+  }
+
+  selectCat(row: GridFinding, cat: string, e: MouseEvent) {
+    e.stopPropagation();
+    this.preFocusSnap = this.preFocusSnap ?? this.snapshot();
+    row.category = cat;
+    row._catOpen = false;
+    this.markDirty(row);
+    this.syncFormulaBar();
+    // Commit undo on category select
+    const cur = this.snapshot();
+    if (this.preFocusSnap && cur !== this.preFocusSnap) {
+      this.undoStack.push(this.preFocusSnap);
+      if (this.undoStack.length > 20) this.undoStack.shift();
+      this.redoStack = [];
+    }
+    this.preFocusSnap = null;
+  }
+
+  @HostListener('document:click')
+  closeAllCats() {
+    if (this.rows.some(r => r._catOpen)) {
+      this.rows.forEach(r => { r._catOpen = false; r._catSearch = ''; r._filteredCats = CATEGORIES; });
+    }
+  }
+
+  // ── Column resize ─────────────────────────────────────────────────────────
+  startResize(e: MouseEvent, ci: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.resizingCol = ci;
+    const startX     = e.clientX;
+    const startW     = this.COLS[ci].width;
+
+    const onMove = (me: MouseEvent) => {
+      this.COLS[this.resizingCol].width = Math.max(
+        this.COLS[this.resizingCol].minWidth,
+        startW + (me.clientX - startX)
+      );
+      this.cdr.markForCheck();
+    };
+    const onUp = () => {
+      this.resizingCol = -1;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  // ── Cell value helpers ────────────────────────────────────────────────────
+  cellVal(row: GridFinding, key: DataKey): string {
+    return String((row as any)[key] ?? '');
+  }
+
+  setCellVal(row: GridFinding, key: DataKey, val: string) {
+    (row as any)[key] = val;
+    this.markDirty(row);
+    if (this.activeRow >= 0 && this.COLS[this.activeCol]?.key === key) {
+      this.formulaBarValue = val;
+    }
+  }
+
+  riskClass(v: string): string {
+    return v === 'High' ? 'risk-high' : v === 'Medium' ? 'risk-med' : 'risk-low';
+  }
+
+  statusClass(v: string): string {
+    return v === 'Rectified' ? 'st-rect' : v === 'Unrectified' ? 'st-unrect' : 'st-xfer';
+  }
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(e: KeyboardEvent) {
+    const target  = e.target as HTMLElement;
+    const inGrid  = !!target.closest('.grid-scroll');
+    const inFBar  = target.classList.contains('formula-bar-input');
+    if (!inGrid && !inFBar) return;
+    if (target.classList.contains('cat-search-input')) return;
+
+    const { ctrlKey, shiftKey, key } = e;
+
+    // Global shortcuts
+    if (ctrlKey && key === 's') { e.preventDefault(); this.saveAll(); return; }
+    if (ctrlKey && !shiftKey && key === 'z') { e.preventDefault(); this.undo(); return; }
+    if (ctrlKey && (key === 'y' || (shiftKey && key === 'Z'))) { e.preventDefault(); this.redo(); return; }
+    if (ctrlKey && key === 'd') { e.preventDefault(); this.fillDown(); return; }
+    if (ctrlKey && shiftKey && key === '+') { e.preventDefault(); this.insertRowAbove(); return; }
+
+    // Copy — only when no text selection in input
+    if (ctrlKey && key === 'c') {
+      const hasTextSel = (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') &&
+        (target as HTMLInputElement).selectionStart !== (target as HTMLInputElement).selectionEnd;
+      if (!hasTextSel && this.selStartRow >= 0) { e.preventDefault(); this.copySelection(); }
+      return;
+    }
+
+    if (this.activeRow < 0) return;
+
+    switch (key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        this.navigate(this.activeRow - 1, this.activeCol, shiftKey);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        this.navigate(this.activeRow + 1, this.activeCol, shiftKey);
+        break;
+      case 'ArrowLeft':
+        if (ctrlKey || target.tagName === 'SELECT') {
+          e.preventDefault();
+          this.navigate(this.activeRow, this.activeCol - 1, shiftKey);
+        }
+        break;
+      case 'ArrowRight':
+        if (ctrlKey || target.tagName === 'SELECT') {
+          e.preventDefault();
+          this.navigate(this.activeRow, this.activeCol + 1, shiftKey);
+        }
+        break;
+      case 'Tab':
+        e.preventDefault();
+        shiftKey
+          ? this.navigate(this.activeRow, this.activeCol - 1)
+          : this.navigate(this.activeRow, this.activeCol + 1);
+        break;
+      case 'Enter':
+        if (target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          this.navigate(this.activeRow + 1, this.activeCol);
+        }
+        break;
+      case 'Delete':
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          this.clearSelection();
+        }
+        break;
+      case 'Escape':
+        this.rows.forEach(r => { r._catOpen = false; });
+        break;
+    }
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
   exportCsv() {
-    const headers = ['SL No','Name of Customers','Finding Details','Category',
-                     'Lapses Originated','No of Instances','Finding Area',
-                     'Risk Rating','Compliance Status','Lapses Type'];
+    const headers = this.COLS.map(c => `"${c.label}"`).join(',');
     const lines = this.visibleRows.map(r =>
-      [r.slNo, r.nameOfCustomers, r.findingDetails, r.category,
-       r.lapsesOriginated, r.noOfInstances, r.findingArea,
-       r.riskRating, r.complianceStatus, r.lapsesType]
-        .map(v => `"${(v ?? '').replace(/"/g, '""')}"`)
-        .join(',')
+      this.COLS.map(c => `"${this.cellVal(r, c.key).replace(/"/g, '""')}"`).join(',')
     );
-    const blob = new Blob([[headers.join(','), ...lines].join('\n')], { type: 'text/csv' });
+    const bom = '﻿';
+    const blob = new Blob([bom + [headers, ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `findings_report${this.data.reportId}_${new Date().toISOString().slice(0, 10)}.csv`;
@@ -469,7 +893,7 @@ export class FindingFormComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(a.href);
   }
 
-  // ── Save all ──────────────────────────────────────────────────────
+  // ── Save all ──────────────────────────────────────────────────────────────
   saveAll() {
     type Op = { obs: Observable<any>; row: GridFinding; type: 'create' | 'update' | 'delete' };
     const ops: Op[] = [];
@@ -527,7 +951,7 @@ export class FindingFormComponent implements OnInit, OnDestroy {
       findingDetails: r.findingDetails, category: r.category,
       lapsesOriginated: r.lapsesOriginated, noOfInstances: r.noOfInstances,
       findingArea: r.findingArea, riskRating: r.riskRating as RiskRating,
-      complianceStatus: r.complianceStatus, lapsesType: r.lapsesType
+      complianceStatus: r.complianceStatus, lapsesType: r.lapsesType,
     };
   }
 
@@ -537,7 +961,7 @@ export class FindingFormComponent implements OnInit, OnDestroy {
       findingDetails: r.findingDetails, category: r.category,
       lapsesOriginated: r.lapsesOriginated, noOfInstances: r.noOfInstances,
       findingArea: r.findingArea, riskRating: r.riskRating as RiskRating,
-      complianceStatus: r.complianceStatus, lapsesType: r.lapsesType
+      complianceStatus: r.complianceStatus, lapsesType: r.lapsesType,
     };
   }
 }

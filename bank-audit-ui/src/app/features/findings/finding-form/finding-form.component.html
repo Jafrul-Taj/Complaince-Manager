@@ -1,64 +1,85 @@
 <div class="grid-dialog">
 
-  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <!-- ── Header ───────────────────────────────────────────────────────────── -->
   <div class="grid-header">
     <div class="grid-title">
       <mat-icon class="title-icon">grid_on</mat-icon>
-      <span>Audit Findings Grid</span>
+      <span>Audit Findings — Spreadsheet Editor</span>
       <span class="row-count">{{ visibleRows.length }} row{{ visibleRows.length !== 1 ? 's' : '' }}</span>
-      @if (visibleRows.length !== rows.length) {
-        <span class="deleted-count">{{ rows.length - visibleRows.length }} pending delete</span>
+      @if (pendingDeleteCount > 0) {
+        <span class="deleted-count">{{ pendingDeleteCount }} pending delete</span>
       }
     </div>
-    <button class="close-btn" (click)="dialogRef.close()" title="Close">
-      <mat-icon>close</mat-icon>
-    </button>
+    <div class="header-actions">
+      <button class="header-btn" (click)="exportCsv()" matTooltip="Export CSV (UTF-8 BOM)">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button class="close-btn" (click)="dialogRef.close()" title="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
   </div>
 
-  <!-- ── Toolbar ──────────────────────────────────────────────────── -->
+  <!-- ── Formula bar ──────────────────────────────────────────────────────── -->
+  <div class="formula-bar">
+    <span class="formula-label">
+      <mat-icon class="fx-icon">functions</mat-icon>
+      @if (activeRow >= 0 && activeCol >= 0) {
+        <span class="cell-ref">{{ 'R' + (activeRow+1) + 'C' + (activeCol+1) }}</span>
+      }
+    </span>
+    <input class="formula-bar-input"
+           [(ngModel)]="formulaBarValue"
+           (ngModelChange)="onFormulaBarChange()"
+           placeholder="Select a cell to edit its content here…" />
+  </div>
+
+  <!-- ── Toolbar ───────────────────────────────────────────────────────────── -->
   <div class="grid-toolbar">
     <div class="toolbar-left">
-
-      <button mat-stroked-button class="btn-add" (click)="addRow()">
+      <button mat-stroked-button class="btn-add" (click)="addRow()" matTooltip="Add row (Ctrl+Shift++)">
         <mat-icon>add</mat-icon> Add Row
       </button>
 
-      <button mat-stroked-button class="btn-del-sel"
-              [disabled]="selectedCount === 0"
-              (click)="deleteSelected()">
-        <mat-icon>delete_sweep</mat-icon>
-        Delete ({{ selectedCount }})
+      <button mat-stroked-button class="btn-undo" [disabled]="!canUndo"
+              (click)="undo()" matTooltip="Undo (Ctrl+Z)">
+        <mat-icon>undo</mat-icon>
       </button>
 
-      <!-- Bulk edit — shown when rows are selected -->
+      <button mat-stroked-button class="btn-redo" [disabled]="!canRedo"
+              (click)="redo()" matTooltip="Redo (Ctrl+Y)">
+        <mat-icon>redo</mat-icon>
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button mat-stroked-button class="btn-del-sel"
+              [disabled]="selectedCount === 0"
+              (click)="deleteSelected()"
+              matTooltip="Delete selected rows">
+        <mat-icon>delete_sweep</mat-icon>
+        @if (selectedCount > 0) { ({{ selectedCount }}) }
+      </button>
+
+      <!-- Bulk edit bar -->
       @if (selectedCount > 0) {
         <div class="bulk-bar">
-          <span class="bulk-label">Bulk edit {{ selectedCount }} rows:</span>
+          <span class="bulk-label">
+            <mat-icon class="bulk-icon">edit_note</mat-icon>
+            Bulk edit {{ selectedCount }} rows:
+          </span>
           <select class="bulk-select" [(ngModel)]="bulkField">
             <option value="">-- field --</option>
             @for (f of BULK_FIELDS; track f.value) {
               <option [value]="f.value">{{ f.label }}</option>
             }
           </select>
-          @if (bulkField === 'findingArea') {
+          @if (bulkFieldDef?.type === 'select') {
             <select class="bulk-select" [(ngModel)]="bulkValue">
               <option value="">--</option>
-              @for (a of AREAS; track a) { <option [value]="a">{{ a }}</option> }
-            </select>
-          } @else if (bulkField === 'riskRating') {
-            <select class="bulk-select" [(ngModel)]="bulkValue">
-              <option value="">--</option>
-              @for (r of RISK_RATINGS; track r) { <option [value]="r">{{ r }}</option> }
-            </select>
-          } @else if (bulkField === 'complianceStatus') {
-            <select class="bulk-select" [(ngModel)]="bulkValue">
-              <option value="">--</option>
-              @for (s of STATUSES; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
-          } @else if (bulkField === 'lapsesType') {
-            <select class="bulk-select" [(ngModel)]="bulkValue">
-              <option value="">--</option>
-              @for (t of LAPSES_TYPES; track t) { <option [value]="t">{{ t }}</option> }
+              @for (opt of bulkFieldDef!.options; track opt) {
+                <option [value]="opt">{{ opt }}</option>
+              }
             </select>
           } @else if (bulkField) {
             <input class="bulk-input" [(ngModel)]="bulkValue" placeholder="Enter value…" />
@@ -70,16 +91,11 @@
           </button>
         </div>
       }
-
     </div>
 
     <div class="toolbar-right">
-      <button mat-stroked-button class="btn-export" (click)="exportCsv()" matTooltip="Download as CSV">
-        <mat-icon>download</mat-icon> Export CSV
-      </button>
-      <button mat-raised-button class="btn-save"
-              [disabled]="saving"
-              (click)="saveAll()">
+      <button mat-raised-button class="btn-save" [disabled]="saving" (click)="saveAll()"
+              matTooltip="Save all changes (Ctrl+S)">
         @if (saving) {
           <mat-icon class="spin">sync</mat-icon>
         } @else {
@@ -90,7 +106,7 @@
     </div>
   </div>
 
-  <!-- ── Progress / Results ───────────────────────────────────────── -->
+  <!-- ── Progress / Results ────────────────────────────────────────────────── -->
   @if (saving) {
     <mat-progress-bar mode="determinate" [value]="saveProgress" class="save-bar"></mat-progress-bar>
   }
@@ -98,41 +114,50 @@
     <div class="save-result" [class.has-errors]="saveResults.failed > 0">
       <mat-icon>{{ saveResults.failed === 0 ? 'check_circle' : 'warning' }}</mat-icon>
       Saved: {{ saveResults.saved }}
-      @if (saveResults.failed > 0) { · Failed: {{ saveResults.failed }} }
+      @if (saveResults.failed > 0) { &nbsp;· Failed: {{ saveResults.failed }} }
     </div>
   }
 
-  <!-- ── Legend ───────────────────────────────────────────────────── -->
+  <!-- ── Legend ────────────────────────────────────────────────────────────── -->
   <div class="legend-bar">
-    <span class="legend-item new">● New row</span>
-    <span class="legend-item mod">● Modified</span>
-    <span class="legend-item sel">● Selected</span>
-    <span class="legend-tip">
-      <mat-icon>info</mat-icon>
-      Ctrl+V to paste from Excel · Ctrl+D to fill down · Enter to move down
-    </span>
+    <span class="legend-item new-item">■ New</span>
+    <span class="legend-item mod-item">■ Modified</span>
+    <span class="legend-item sel-item">■ Selected</span>
+    <span class="legend-sep">|</span>
+    <span class="legend-tip"><kbd>↑↓←→</kbd> Navigate</span>
+    <span class="legend-tip"><kbd>Tab</kbd> Right</span>
+    <span class="legend-tip"><kbd>Enter</kbd> Down</span>
+    <span class="legend-tip"><kbd>Shift+↑↓←→</kbd> Extend sel.</span>
+    <span class="legend-tip"><kbd>Ctrl+C</kbd> Copy</span>
+    <span class="legend-tip"><kbd>Ctrl+V</kbd> Paste</span>
+    <span class="legend-tip"><kbd>Ctrl+Z/Y</kbd> Undo/Redo</span>
+    <span class="legend-tip"><kbd>Ctrl+D</kbd> Fill↓</span>
+    <span class="legend-tip"><kbd>Ctrl+S</kbd> Save</span>
   </div>
 
-  <!-- ── Grid ─────────────────────────────────────────────────────── -->
+  <!-- ── Grid ──────────────────────────────────────────────────────────────── -->
   <div class="grid-scroll">
     <table class="grid-table">
       <thead>
         <tr>
-          <th class="col-check">
+          <!-- Fixed columns: checkbox, row-number -->
+          <th class="col-check th-fixed">
             <input type="checkbox" [checked]="allSelected" (change)="toggleAll()" title="Select all" />
           </th>
-          <th class="col-num">#</th>
-          <th class="col-sl">SL No</th>
-          <th class="col-cust">Name of Customers</th>
-          <th class="col-det">Finding Details</th>
-          <th class="col-cat">Category</th>
-          <th class="col-laps">Lapses Originated</th>
-          <th class="col-inst">No of Instances</th>
-          <th class="col-area">Area</th>
-          <th class="col-risk">Risk</th>
-          <th class="col-status">Status</th>
-          <th class="col-type">Lapses Type</th>
-          <th class="col-act">Actions</th>
+          <th class="col-num th-fixed">#</th>
+
+          <!-- Dynamic data columns -->
+          @for (col of COLS; track col.key; let ci = $index) {
+            <th [style.width.px]="col.width" [style.min-width.px]="col.minWidth"
+                class="th-data" [attr.data-thidx]="ci">
+              <div class="th-inner">
+                <span class="th-label">{{ col.label }}</span>
+                <div class="resize-handle" (mousedown)="startResize($event, ci)"></div>
+              </div>
+            </th>
+          }
+
+          <th class="col-act th-fixed">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -144,159 +169,106 @@
               [class.row-fill]="isFillHighlight(i)">
 
             <!-- Checkbox + fill handle -->
-            <td class="col-check">
+            <td class="col-check td-fixed">
               <div class="check-cell">
                 <input type="checkbox"
                        [checked]="selectedKeys.has(row._key)"
                        (change)="toggleSelect(row._key)" />
-                <div class="fill-handle"
-                     title="Drag to fill rows"
-                     (mousedown)="startFill($event, row, i)">
-                </div>
+                <div class="fill-handle" title="Drag to fill rows"
+                     (mousedown)="startFill($event, row, i)"></div>
               </div>
             </td>
 
             <!-- Row number -->
-            <td class="col-num row-num">{{ i + 1 }}</td>
+            <td class="col-num td-fixed row-num">{{ i + 1 }}</td>
 
-            <!-- SL No -->
-            <td>
-              <input class="cell-input" [(ngModel)]="row.slNo"
-                     (ngModelChange)="markDirty(row)"
-                     (keydown)="onCellKey($event, i, 0)"
-                     [attr.data-colidx]="0"
-                     placeholder="i." />
-            </td>
+            <!-- Dynamic data cells -->
+            @for (col of COLS; track col.key; let ci = $index) {
+              <td [attr.data-colidx]="ci"
+                  [style.width.px]="col.width"
+                  [class.cell-active]="isActive(i, ci)"
+                  [class.in-selection]="isInSelection(i, ci)"
+                  (mousedown)="onCellMouseDown($event, i, ci)">
 
-            <!-- Name of Customers -->
-            <td>
-              <input class="cell-input" [(ngModel)]="row.nameOfCustomers"
-                     (ngModelChange)="markDirty(row)"
-                     (keydown)="onCellKey($event, i, 1)"
-                     [attr.data-colidx]="1" />
-            </td>
+                @if (col.type === 'text') {
+                  <input class="cell-input"
+                         [attr.data-colidx]="ci"
+                         [value]="cellVal(row, col.key)"
+                         (input)="setCellVal(row, col.key, $any($event.target).value)"
+                         (focus)="onCellFocus(i, ci)"
+                         (blur)="onCellBlur()"
+                         [placeholder]="ci === 0 ? 'i.' : ''" />
+                }
 
-            <!-- Finding Details -->
-            <td>
-              <textarea class="cell-textarea" [(ngModel)]="row.findingDetails"
-                        (ngModelChange)="markDirty(row)"
-                        [attr.data-colidx]="2"
-                        rows="2"></textarea>
-            </td>
+                @if (col.type === 'textarea') {
+                  <textarea class="cell-textarea"
+                            [attr.data-colidx]="ci"
+                            [value]="cellVal(row, col.key)"
+                            (input)="setCellVal(row, col.key, $any($event.target).value)"
+                            (focus)="onCellFocus(i, ci)"
+                            (blur)="onCellBlur()"
+                            rows="2"></textarea>
+                }
 
-            <!-- Category — custom searchable dropdown -->
-            <td class="col-cat">
-              <div class="cat-wrap">
-                <div class="cat-display"
-                     [class.has-value]="row.category"
-                     [title]="row.category"
-                     (click)="openCat(row, $event)">
-                  <span>{{ row.category || 'Select category…' }}</span>
-                  <mat-icon class="cat-arrow">{{ row._catOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </div>
-                @if (row._catOpen) {
-                  <div class="cat-panel" (click)="$event.stopPropagation()">
-                    <input class="cat-search-input"
-                           [attr.data-rowkey]="row._key"
-                           [(ngModel)]="row._catSearch"
-                           (ngModelChange)="filterCat(row)"
-                           placeholder="Search categories…" />
-                    <div class="cat-list">
-                      @for (c of row._filteredCats; track c) {
-                        <div class="cat-option"
-                             [class.selected]="row.category === c"
-                             [title]="c"
-                             (click)="selectCat(row, c, $event)">
-                          {{ c }}
-                        </div>
-                      }
-                      @empty {
-                        <div class="cat-empty">No matches</div>
-                      }
+                @if (col.type === 'select') {
+                  <select class="cell-select"
+                          [attr.data-colidx]="ci"
+                          (focus)="onCellFocus(i, ci)"
+                          (blur)="onCellBlur()"
+                          (change)="setCellVal(row, col.key, $any($event.target).value)"
+                          [ngClass]="col.key === 'riskRating' ? riskClass(cellVal(row, col.key))
+                                    : col.key === 'complianceStatus' ? statusClass(cellVal(row, col.key))
+                                    : ''">
+                    @if (!col.options!.includes(cellVal(row, col.key))) {
+                      <option value="">--</option>
+                    }
+                    @for (opt of col.options; track opt) {
+                      <option [value]="opt" [selected]="cellVal(row, col.key) === opt">{{ opt }}</option>
+                    }
+                  </select>
+                }
+
+                @if (col.type === 'category') {
+                  <div class="cat-wrap" [attr.data-colidx]="ci">
+                    <div class="cat-display"
+                         [class.has-value]="row.category"
+                         [title]="row.category"
+                         (click)="openCat(row, $event); onCellFocus(i, ci)">
+                      <span class="cat-text">{{ row.category || 'Select category…' }}</span>
+                      <mat-icon class="cat-arrow">{{ row._catOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </div>
+                    @if (row._catOpen) {
+                      <div class="cat-panel" (click)="$event.stopPropagation()">
+                        <input class="cat-search-input"
+                               [attr.data-rowkey]="row._key"
+                               [(ngModel)]="row._catSearch"
+                               (ngModelChange)="filterCat(row)"
+                               placeholder="Search categories…" />
+                        <div class="cat-list">
+                          @for (c of row._filteredCats; track c) {
+                            <div class="cat-option"
+                                 [class.cat-selected]="row.category === c"
+                                 [title]="c"
+                                 (click)="selectCat(row, c, $event)">
+                              {{ c }}
+                            </div>
+                          }
+                          @empty {
+                            <div class="cat-empty">No matches</div>
+                          }
+                        </div>
+                      </div>
+                    }
                   </div>
                 }
-              </div>
-            </td>
 
-            <!-- Lapses Originated -->
-            <td>
-              <input class="cell-input" [(ngModel)]="row.lapsesOriginated"
-                     (ngModelChange)="markDirty(row)"
-                     (keydown)="onCellKey($event, i, 4)"
-                     [attr.data-colidx]="4" />
-            </td>
-
-            <!-- No of Instances -->
-            <td>
-              <input class="cell-input" [(ngModel)]="row.noOfInstances"
-                     (ngModelChange)="markDirty(row)"
-                     (keydown)="onCellKey($event, i, 5)"
-                     [attr.data-colidx]="5" />
-            </td>
-
-            <!-- Finding Area -->
-            <td>
-              <select class="cell-select" [(ngModel)]="row.findingArea"
-                      (ngModelChange)="markDirty(row)"
-                      (keydown)="onCellKey($event, i, 6)"
-                      [attr.data-colidx]="6">
-                <option value="">--</option>
-                @for (a of AREAS; track a) {
-                  <option [value]="a">{{ a }}</option>
-                }
-              </select>
-            </td>
-
-            <!-- Risk Rating -->
-            <td>
-              <select class="cell-select"
-                      [(ngModel)]="row.riskRating"
-                      (ngModelChange)="markDirty(row)"
-                      (keydown)="onCellKey($event, i, 7)"
-                      [attr.data-colidx]="7"
-                      [class.risk-high]="row.riskRating === 'High'"
-                      [class.risk-med]="row.riskRating === 'Medium'"
-                      [class.risk-low]="row.riskRating === 'Low'">
-                @for (r of RISK_RATINGS; track r) {
-                  <option [value]="r">{{ r }}</option>
-                }
-              </select>
-            </td>
-
-            <!-- Compliance Status -->
-            <td>
-              <select class="cell-select"
-                      [(ngModel)]="row.complianceStatus"
-                      (ngModelChange)="markDirty(row)"
-                      (keydown)="onCellKey($event, i, 8)"
-                      [attr.data-colidx]="8"
-                      [class.st-rect]="row.complianceStatus === 'Rectified'"
-                      [class.st-unrect]="row.complianceStatus === 'Unrectified'"
-                      [class.st-xfer]="row.complianceStatus === 'Transfer'">
-                @for (s of STATUSES; track s) {
-                  <option [value]="s">{{ s }}</option>
-                }
-              </select>
-            </td>
-
-            <!-- Lapses Type -->
-            <td>
-              <select class="cell-select" [(ngModel)]="row.lapsesType"
-                      (ngModelChange)="markDirty(row)"
-                      (keydown)="onCellKey($event, i, 9)"
-                      [attr.data-colidx]="9">
-                <option value="">--</option>
-                @for (t of LAPSES_TYPES; track t) {
-                  <option [value]="t">{{ t }}</option>
-                }
-              </select>
-            </td>
+              </td>
+            }
 
             <!-- Row actions -->
-            <td class="col-act">
+            <td class="col-act td-fixed">
               <div class="row-acts">
-                <button class="act-btn dup" (click)="duplicateRow(row)" title="Duplicate row">
+                <button class="act-btn dup" (click)="duplicateRow(row)" title="Duplicate row (Ctrl+D)">
                   <mat-icon>content_copy</mat-icon>
                 </button>
                 <button class="act-btn del" (click)="removeRow(row)" title="Delete row">
@@ -310,13 +282,35 @@
 
         @empty {
           <tr>
-            <td colspan="13" class="empty-row">
-              No rows. Click <strong>Add Row</strong> or paste data from Excel.
+            <td [attr.colspan]="COLS.length + 3" class="empty-row">
+              <mat-icon class="empty-icon">table_rows</mat-icon>
+              <br />
+              No rows. Click <strong>Add Row</strong> or paste data from Excel (Ctrl+V).
             </td>
           </tr>
         }
+
       </tbody>
     </table>
+  </div>
+
+  <!-- ── Status bar ─────────────────────────────────────────────────────────── -->
+  <div class="status-bar">
+    <span class="status-counts">
+      <span class="sc-total">{{ visibleRows.length }} rows</span>
+      @if (pendingDeleteCount > 0) {
+        <span class="sc-del">· {{ pendingDeleteCount }} pending delete</span>
+      }
+      @if (selectedKeys.size > 0) {
+        <span class="sc-sel">· {{ selectedKeys.size }} checkbox-selected</span>
+      }
+    </span>
+    <span class="status-sel-info">
+      @if (selectionInfo) { {{ selectionInfo }} }
+    </span>
+    <span class="status-shortcuts">
+      <kbd>Ctrl+Z</kbd> Undo &nbsp;<kbd>Ctrl+Y</kbd> Redo
+    </span>
   </div>
 
 </div>
