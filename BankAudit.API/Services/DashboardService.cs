@@ -326,7 +326,9 @@ public class DashboardService : IDashboardService
     {
         var query = BuildQuery(years, branchIds, areas, riskRatings, statuses: statuses, lapsesType: lapsesType)
             .Include(f => f.Branch)
-            .Include(f => f.AssignedOfficer);
+            .Include(f => f.AssignedOfficer)
+            .Include(f => f.ComplianceAuditReport!)
+            .ThenInclude(r => r.AuditTeamLead); 
 
         var findings = await query.OrderBy(f => f.Branch.BranchName).ThenBy(f => f.SlNo).ToListAsync();
         return findings.Select(f => new FindingDto
@@ -343,6 +345,7 @@ public class DashboardService : IDashboardService
             FindingDetails       = f.FindingDetails,
             LapsesOriginated     = f.LapsesOriginated,
             Category             = f.Category,
+            AuditLeaderName      = f.ComplianceAuditReport?.AuditTeamLead?.Name ?? "",
             RiskRating           = f.RiskRating.ToString(),
             ComplianceStatus     = f.ComplianceStatus,
             LapsesType           = f.LapsesType,
