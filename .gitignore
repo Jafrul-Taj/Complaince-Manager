@@ -2,6 +2,7 @@
 BankAudit.API/bin/
 BankAudit.API/obj/
 BankAudit.API/*.db
+BankAudit.API/logs/
 BankAudit.API/*.db-shm
 BankAudit.API/*.db-wal
 BankAudit.API/Migrations/
