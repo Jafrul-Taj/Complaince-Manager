@@ -190,7 +190,7 @@
 /* ── KPI Row ─────────────────────────────────────────────────── */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -450,7 +450,7 @@
 .breakdown-table tbody tr.clickable-row:hover td { background: #eff6ff !important; color: #1d4ed8; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 1300px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1500px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1050px) {
   .row-chart-branch { grid-template-columns: 1fr; }
   .row-officer-year { grid-template-columns: 1fr; }
@@ -458,4 +458,7 @@
 @media (max-width: 800px) {
   .kpi-row    { grid-template-columns: repeat(2, 1fr); }
   .filter-bar { position: static; }
+}
+@media (max-width: 480px) {
+  .kpi-row { grid-template-columns: 1fr; }
 }

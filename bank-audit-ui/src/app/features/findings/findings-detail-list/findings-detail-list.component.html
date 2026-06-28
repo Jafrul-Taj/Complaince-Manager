@@ -86,10 +86,7 @@
         <ng-container matColumnDef="branch">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
           <td mat-cell *matCellDef="let f">
-            <div class="branch-cell">
-              <span class="branch-name">{{ f.branchName }}</span>
-              <span class="branch-code">{{ f.branchCode }}</span>
-            </div>
+            <span class="branch-name">{{ f.branchName }}</span>
           </td>
         </ng-container>
 
