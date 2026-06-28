@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -34,6 +34,7 @@ export class FindingsDetailListComponent implements OnInit, AfterViewInit {
   private findingSvc = inject(FindingService);
   private dialog     = inject(MatDialog);
   private snack      = inject(MatSnackBar);
+  private cdr        = inject(ChangeDetectorRef);
 
   columns = [
     'slNo', 'branch', 'officer', 'year', 'findingArea',
@@ -81,6 +82,17 @@ export class FindingsDetailListComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     this.dataSource.sort      = this.sort;
     this.dataSource.paginator = this.paginator;
+
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const t = filter.toLowerCase();
+      return (data.slNo?.toString() ?? '').toLowerCase().includes(t) ||
+             (data.branchName      ?? '').toLowerCase().includes(t) ||
+             (data.officerName     ?? '').toLowerCase().includes(t) ||
+             (data.findingArea     ?? '').toLowerCase().includes(t) ||
+             (data.nameOfCustomers ?? '').toLowerCase().includes(t) ||
+             (data.findingDetails  ?? '').toLowerCase().includes(t) ||
+             (data.category        ?? '').toLowerCase().includes(t);
+    };
   }
 
   load() {
@@ -93,19 +105,25 @@ export class FindingsDetailListComponent implements OnInit, AfterViewInit {
     ).subscribe({
       next: data => {
         this.allFindings = data;
+        this.dataSource.data = data;
         this.applyLocalFilter();
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: () => { this.loading = false; }
+      error: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   applyLocalFilter() {
     let filtered = this.allFindings;
+
     if (this.searchTerm) {
       const t = this.searchTerm.toLowerCase();
       filtered = filtered.filter(f =>
-        (f.slNo            ?? '').toLowerCase().includes(t) ||
+        (f.slNo?.toString() ?? '').toLowerCase().includes(t) ||
         (f.branchName      ?? '').toLowerCase().includes(t) ||
         (f.officerName     ?? '').toLowerCase().includes(t) ||
         (f.findingArea     ?? '').toLowerCase().includes(t) ||
@@ -114,9 +132,15 @@ export class FindingsDetailListComponent implements OnInit, AfterViewInit {
         (f.category        ?? '').toLowerCase().includes(t)
       );
     }
+
     if (this.riskFilter)   filtered = filtered.filter(f => f.riskRating      === this.riskFilter);
     if (this.statusFilter) filtered = filtered.filter(f => f.complianceStatus === this.statusFilter);
+
     this.dataSource.data = filtered;
+
+    if (this.paginator) {
+      this.paginator.firstPage();
+    }
   }
 
   onSearch(e: Event)       { this.searchTerm   = (e.target as HTMLInputElement).value;  this.applyLocalFilter(); }
